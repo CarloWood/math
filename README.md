@@ -1,4 +1,4 @@
-# math submodule
+# ai-math submodule
 
 This repository is a [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
 providing C++ math utilities for other projects, including:
@@ -56,10 +56,10 @@ where you want to have the ``math`` subdirectory (the
 root of the project is recommended as that is the only thing
 I've tested so far):
 
-    git submodule add https://github.com/CarloWood/math.git
+    git submodule add https://github.com/CarloWood/ai-math.git math
 
 This should clone math into the subdirectory ``math``, or
 if you already cloned it there, it should add it.
 
-Checkout [math-testsuite](https://github.com/CarloWood/math-testsuite)
+Checkout [ai-math-testsuite](https://github.com/CarloWood/ai-math-testsuite)
 for an example of a project that uses this submodule.
