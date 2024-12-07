@@ -10,7 +10,11 @@
 #include "debug.h"
 #ifdef CWDEBUG
 #include "utils/has_print_on.h"
-#endif
+
+NAMESPACE_DEBUG_CHANNELS_START
+extern channel_ct cubic;
+NAMESPACE_DEBUG_CHANNELS_END
+#endif // CWDEBUG
 
 namespace math {
 #ifdef CWDEBUG
@@ -245,7 +249,7 @@ template<typename T>
 requires ConceptMathOperations<T>
 int CubicPolynomial<T>::get_roots(std::array<T, 3>& roots_out) const
 {
-  DoutEntering(dc::notice, "CubicPolynomial<" << libcwd::type_info_of<T>().demangled_name() << ">::get_roots() for " << *this);
+  DoutEntering(dc::cubic, "CubicPolynomial<" << libcwd::type_info_of<T>().demangled_name() << ">::get_roots() for " << *this);
 
   // Include the body of the function.
 # include "CubicPolynomial_get_roots.cpp"

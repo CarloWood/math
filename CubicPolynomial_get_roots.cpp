@@ -159,7 +159,7 @@
     u = 0;
   }
 #endif  // no HALLEY_ITERATIONS_TEST
-  Dout(dc::notice, "C0 = " << std::setprecision(18) << C0 << ", C1 = " << C1);
+  Dout(dc::cubic, "C0 = " << std::setprecision(18) << C0 << ", C1 = " << C1);
 
   // Determine if the inflection point is above or below the x-axis.
   bool const inflection_point_y_larger_than_zero = C0 > 0;
@@ -252,7 +252,7 @@
 
 #ifdef GETROOTS_ASSIGN_INITIAL_GUESS
     initial_guess = u;
-    Dout(dc::notice, "Initial guess: " << std::setprecision(18) << initial_guess);
+    Dout(dc::cubic, "Initial guess: " << std::setprecision(18) << initial_guess);
 #endif
     int limit = max_limit;
 
@@ -275,7 +275,7 @@
       step = -Q_u * Qp_u / (utils::square(Qp_u) - Q_u * half_Qpp_u);
       u += step;                                                                // uₙ₊₁ = uₙ - Q(u)Q'(u) / (Q'(u)² - ½Q(u)Q"(u))
 #ifdef CWDEBUG
-      Dout(dc::notice, "Halley: u = " << std::setprecision(18) << u << " (" <<
+      Dout(dc::cubic, "Halley: u = " << std::setprecision(18) << u << " (" <<
           std::nextafter(u, std::numeric_limits<double>::infinity()) << "); step = " << step << "; Δu = " << (u - prev_u));
       if (std::abs(prev_u - u) <= std::abs(max_relative_error_before_last_iteration * u))
       {
@@ -346,7 +346,7 @@
 #endif
 #endif
 
-    Dout(dc::notice|continued_cf, "Root found: " << std::setprecision(18) << u);
+    Dout(dc::cubic|continued_cf, "Root found: " << std::setprecision(18) << u);
 #if defined(RANDOM_CUBICS_TEST) || defined(GETROOTS_ASSIGN_ITERATIONS)
     Dout(dc::continued, "; iterations: " << iterations);
 #endif
@@ -380,7 +380,7 @@
   // Finally apply Halley once more on all found roots.
   for (int i = 0; i < number_of_roots; ++i)
   {
-    Dout(dc::notice|continued_cf, "roots_out[" << i << "]: " << std::setprecision(18) << roots_out[i] << " --> ");
+    Dout(dc::cubic|continued_cf, "roots_out[" << i << "]: " << std::setprecision(18) << roots_out[i] << " --> ");
     double Px = evaluate(roots_out[i]);
     double dPx = derivative(roots_out[i]);
     double half_ddPx = half_second_derivative(roots_out[i]);

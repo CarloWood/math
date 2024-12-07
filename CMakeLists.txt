@@ -35,6 +35,13 @@ target_sources(math_ObjLib
     ${HEADER_FILES}
 )
 
+if (OptionEnableLibcwd)
+  target_sources(math_ObjLib
+    PRIVATE
+      "CubicPolynomial.cxx"
+  )
+endif ()
+
 # Required include search-paths.
 #get_target_property(CWDS_INTERFACE_INCLUDE_DIRECTORIES AICxx::cwds INTERFACE_INCLUDE_DIRECTORIES)
 #target_include_directories(math_ObjLib
