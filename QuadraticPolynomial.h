@@ -1,9 +1,9 @@
 #pragma once
 
+#include "ConceptMathOperations.h"
 #include "utils/square.h"
 #include "utils/macros.h"
 #include <array>
-#include <cmath>
 #include "debug.h"
 #if CW_DEBUG
 #include "utils/almost_equal.h"
@@ -17,18 +17,8 @@ namespace math {
 using utils::has_print_on::operator<<;
 #endif
 
-// Concept to check for required operations.
 template<typename T>
-concept SupportsQuadraticPolynomialMathFunctions = requires(T a) {
-  { std::abs(a) } -> std::same_as<T>;
-  { std::sqrt(a) } -> std::same_as<T>;
-  { std::isfinite(a) } -> std::convertible_to<bool>;
-  { std::isnan(a) } -> std::convertible_to<bool>;
-  { std::copysign(a, a) } -> std::same_as<T>;
-};
-
-template<typename T = double>
-requires SupportsQuadraticPolynomialMathFunctions<T>
+requires ConceptMathOperations<T>
 class QuadraticPolynomial
 {
  private:
@@ -61,7 +51,7 @@ class QuadraticPolynomial
     if (coefficients_[2] == 0)
     {
       roots_out[0] = -coefficients_[0] / coefficients_[1];
-      return std::isfinite(roots_out[0]) ? 1 : 0;
+      return isfinite(roots_out[0]) ? 1 : 0;
     }
 
     T const D = utils::square(coefficients_[1]) - 4 * coefficients_[2] * coefficients_[0];
@@ -71,17 +61,17 @@ class QuadraticPolynomial
     // If this fails then probably the coefficients are SO small that both utils::square(coefficients_[1])
     // as well as coefficients_[2] * coefficients_[0] are zero. That is "fine" as long as the discriminant
     // is not, in fact, less than zero.
-    ASSERT(D > 0 || std::abs(coefficients_[1]) >= 2 * std::sqrt(std::abs(coefficients_[2])) * std::sqrt(std::abs(coefficients_[0])) ||
-        utils::almost_equal(std::abs(coefficients_[1]),
-          2 * std::sqrt(std::abs(coefficients_[2])) * std::sqrt(std::abs(coefficients_[0])), 1e-14));
+    ASSERT(D > 0 || abs(coefficients_[1]) >= 2 * sqrt(abs(coefficients_[2])) * sqrt(abs(coefficients_[0])) ||
+        utils::almost_equal(abs(coefficients_[1]),
+          2 * sqrt(abs(coefficients_[2])) * sqrt(abs(coefficients_[0])), 1e-14));
 
     // Use a sqrt with the same sign as coefficients_[1];
-    T const signed_sqrt_D = std::copysign(std::sqrt(D), coefficients_[1]);
+    T const signed_sqrt_D = copysign(sqrt(D), coefficients_[1]);
 
     // Calculate the root closest to zero.
     roots_out[0] = -2 * coefficients_[0] / (coefficients_[1] + signed_sqrt_D);
 
-    if (AI_UNLIKELY(std::isnan(roots_out[0])))
+    if (AI_UNLIKELY(isnan(roots_out[0])))
     {
       // This means we must have divided by zero, which means that both, coefficients_[1] as well as sqrtD, must be zero.
       // The latter means that coefficients_[0] is zero (coefficients_[2] was already checked not to be zero).
@@ -94,7 +84,7 @@ class QuadraticPolynomial
     roots_out[1] = (coefficients_[1] + signed_sqrt_D) / (-2 * coefficients_[2]);
 
     // The second one is larger in absolute value.
-    ASSERT(std::abs(roots_out[1]) > std::abs(roots_out[0]) || utils::almost_equal(std::abs(roots_out[0]), std::abs(roots_out[1]), 1e-14));
+    ASSERT(abs(roots_out[1]) > abs(roots_out[0]) || utils::almost_equal(abs(roots_out[0]), abs(roots_out[1]), 1e-14));
 
     return 2;
   }
@@ -176,7 +166,7 @@ class QuadraticPolynomial
     QuadraticPolynomial diff{10 * (coefficients_[0] - old[0]), 10 * (coefficients_[1] - old[1]), 10 * (coefficients_[2] - old[2])};
 
     // If abs(diff[2]) < abs(new[2]) then the old one is close enough at infinity.
-    bool close_at_inf = std::abs(diff[2]) < std::abs(coefficients_[2]);
+    bool close_at_inf = abs(diff[2]) < abs(coefficients_[2]);
 
     // Set v_y to the y-coordinate of the vertex of the new parabola.
     T v_y = vertex_y();
@@ -184,7 +174,7 @@ class QuadraticPolynomial
     std::array<std::array<T, 2>, 2> toggle;
     std::array<int, 2> count{};
     std::array<T, 2> c{coefficients_[2] - diff.coefficients_[2], coefficients_[2] + diff.coefficients_[2]};
-    std::array<T, 2> abs_c{std::abs(c[0]), std::abs(c[1])};
+    std::array<T, 2> abs_c{abs(c[0]), abs(c[1])};
     for (int i = 0; i < 2; ++i) // i=0: subtract diff, i=1: add diff.
     {
       T sign = i == 0 ? -1 : 1;
@@ -195,7 +185,7 @@ class QuadraticPolynomial
         if (D > 0)
         {
           T avg = b / (-2 * c[i]);
-          T delta = std::sqrt(D) / (2 * abs_c[i]);
+          T delta = sqrt(D) / (2 * abs_c[i]);
           toggle[i][0] = avg - delta;
           toggle[i][1] = avg + delta;
           count[i] = 2;

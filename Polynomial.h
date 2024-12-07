@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConceptMathOperations.h"
 #include <vector>
 #include <array>
 #include <ranges>
@@ -16,18 +17,8 @@ namespace math {
 using utils::has_print_on::operator<<;
 #endif
 
-// Concept to check for required operations.
 template<typename T>
-concept SupportsPolynomialMathFunctions = requires(T a) {
-  { std::abs(a) } -> std::same_as<T>;
-  { std::sqrt(a) } -> std::same_as<T>;
-  { std::isfinite(a) } -> std::convertible_to<bool>;
-  { std::isnan(a) } -> std::convertible_to<bool>;
-  { std::copysign(a, a) } -> std::same_as<T>;
-};
-
-template<typename T = double>
-requires SupportsPolynomialMathFunctions<T>
+requires ConceptMathOperations<T>
 class Polynomial
 {
  protected:
@@ -205,7 +196,7 @@ class Polynomial
 namespace math {
 
 template<typename T>
-requires SupportsPolynomialMathFunctions<T>
+requires ConceptMathOperations<T>
 Polynomial<T> Polynomial<T>::operator*=(Polynomial<T> const& rhs)
 {
   int const ad_lhs = actual_degree();
@@ -220,7 +211,7 @@ Polynomial<T> Polynomial<T>::operator*=(Polynomial<T> const& rhs)
 }
 
 template<typename T>
-requires SupportsPolynomialMathFunctions<T>
+requires ConceptMathOperations<T>
 Polynomial<T> operator*(Polynomial<T> const& lhs, Polynomial<T> const& rhs)
 {
   int const ad_lhs = lhs.actual_degree();
@@ -237,7 +228,7 @@ Polynomial<T> operator*(Polynomial<T> const& lhs, Polynomial<T> const& rhs)
 }
 
 template<typename T>
-requires SupportsPolynomialMathFunctions<T>
+requires ConceptMathOperations<T>
 int Polynomial<T>::get_roots(std::array<T, 2>& roots_out) const
 {
   // This can be at most a parabola.
@@ -247,19 +238,19 @@ int Polynomial<T>::get_roots(std::array<T, 2>& roots_out) const
     if (coefficients_.size() < 2)
       return 0;
     roots_out[0] = -coefficients_[0] / coefficients_[1];
-    return std::isfinite(roots_out[0]) ? 1 : 0;
+    return isfinite(roots_out[0]) ? 1 : 0;
   }
 
   T const D = utils::square(coefficients_[1]) - 4.0 * coefficients_[2] * coefficients_[0];
   if (D < 0.0)
     return 0;
   // Use a sqrt with the same sign as coefficients_[1];
-  T const signed_sqrt_D = std::copysign(std::sqrt(D), coefficients_[1]);
+  T const signed_sqrt_D = copysign(sqrt(D), coefficients_[1]);
 
   // Calculate the root closest to zero.
   roots_out[0] = -2.0 * coefficients_[0] / (coefficients_[1] + signed_sqrt_D);
 
-  if (AI_UNLIKELY(std::isnan(roots_out[0])))
+  if (AI_UNLIKELY(isnan(roots_out[0])))
   {
     // This means we must have divided by zero, which means that both, coefficients_[1] as well as sqrtD, must be zero.
     // The latter means that coefficients_[0] is zero (coefficients_[2] was already checked not to be zero).
@@ -272,13 +263,13 @@ int Polynomial<T>::get_roots(std::array<T, 2>& roots_out) const
   roots_out[1] = -0.5 * (coefficients_[1] + signed_sqrt_D) / coefficients_[2];
 
   // The second one is larger in absolute value.
-  ASSERT(std::abs(roots_out[1]) > std::abs(roots_out[0]));
+  ASSERT(abs(roots_out[1]) > abs(roots_out[0]));
 
   return 2;
 }
 
 template<typename T>
-requires SupportsPolynomialMathFunctions<T>
+requires ConceptMathOperations<T>
 int Polynomial<T>::get_roots(std::array<std::complex<T>, 5>& roots_out) const
 {
   int degree = coefficients_.size() - 1;
@@ -373,7 +364,7 @@ int Polynomial<T>::get_roots(std::array<std::complex<T>, 5>& roots_out) const
 
 #ifdef CWDEBUG
 template<typename T>
-requires SupportsPolynomialMathFunctions<T>
+requires ConceptMathOperations<T>
 void Polynomial<T>::print_on(std::ostream& os) const
 {
   bool first = true;

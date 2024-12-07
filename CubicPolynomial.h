@@ -17,7 +17,8 @@ namespace math {
 using utils::has_print_on::operator<<;
 #endif
 
-template<typename T = double>
+template<typename T>
+requires ConceptMathOperations<T>
 class CubicPolynomial
 {
  protected:
@@ -134,7 +135,7 @@ class CubicPolynomial
   // Return the division of this Polynomial by the factor (x - r).
   QuadraticPolynomial<T> long_division(T r, T& remainder) const
   {
-    QuadraticPolynomial result;
+    QuadraticPolynomial<T> result;
     result[2] = coefficients_[3];
     result[1] = coefficients_[2] + r * result[2];
     result[0] = coefficients_[1] + r * result[1];
@@ -156,6 +157,7 @@ class CubicPolynomial
 };
 
 template<typename T>
+requires ConceptMathOperations<T>
 void CubicPolynomial<T>::initialize(T x0, T y0, T dxdy0, T x1, T y1, T dxdy1)
 {
   T delta_x_inverse = 1 / (x0 - x1);
@@ -174,6 +176,7 @@ void CubicPolynomial<T>::initialize(T x0, T y0, T dxdy0, T x1, T y1, T dxdy1)
 }
 
 template<typename T>
+requires ConceptMathOperations<T>
 int CubicPolynomial<T>::get_extrema(std::array<T, 2>& extrema_out, bool left_most_first) const
 {
   DoutEntering(dc::notice, "CubicPolynomial<" << libcwd::type_info_of<T>().demangled_name() <<
@@ -190,7 +193,7 @@ int CubicPolynomial<T>::get_extrema(std::array<T, 2>& extrema_out, bool left_mos
     // coefficients_[1] + 2 * coefficients_[2] * x = 0 -->
     // x = -coefficients_[1] / (2 * coefficients_[2]).
     extrema_out[0] = coefficients_[1] / (-2 * coefficients_[2]);
-    return std::isfinite(extrema_out[0]) ? 1 : 0;
+    return isfinite(extrema_out[0]) ? 1 : 0;
   }
 
   // The determinant is (2 * coefficients_[2])^2 - 4 * coefficients_[1] * (3 * coefficients_[3]).
@@ -209,14 +212,14 @@ int CubicPolynomial<T>::get_extrema(std::array<T, 2>& extrema_out, bool left_mos
   }
 
   // Use a sqrt with the same sign as coefficients_[2];
-  T const signed_half_sqrt_D = std::copysign(std::sqrt(one_fourth_D), coefficients_[2]);
+  T const signed_half_sqrt_D = copysign(sqrt(one_fourth_D), coefficients_[2]);
   // The first root that is calculated should go here (see brute_force_index_first_root.cxx).
-  int index_first_root = (left_most_first ? (coefficients_[3] > 0) : false) == (std::copysign(T{1}, coefficients_[2]) > 0);
+  int index_first_root = (left_most_first ? (coefficients_[3] > 0) : false) == (copysign(T{1}, coefficients_[2]) > 0);
 
   // Calculate the root closest to zero.
   extrema_out[index_first_root] = -coefficients_[1] / (coefficients_[2] + signed_half_sqrt_D);
 
-  if (AI_UNLIKELY(std::isnan(extrema_out[0])))
+  if (AI_UNLIKELY(isnan(extrema_out[0])))
   {
     // This means we must have divided by zero, which means that both, coefficients_[1] as well as sqrtD, must be zero.
     // The latter means that coefficients_[0] is zero (coefficients_[2] was already checked not to be zero).
@@ -239,6 +242,7 @@ int CubicPolynomial<T>::get_extrema(std::array<T, 2>& extrema_out, bool left_mos
 }
 
 template<typename T>
+requires ConceptMathOperations<T>
 int CubicPolynomial<T>::get_roots(std::array<T, 3>& roots_out) const
 {
   DoutEntering(dc::notice, "CubicPolynomial<" << libcwd::type_info_of<T>().demangled_name() << ">::get_roots() for " << *this);
@@ -249,6 +253,7 @@ int CubicPolynomial<T>::get_roots(std::array<T, 3>& roots_out) const
 
 #ifdef CWDEBUG
 template<typename T>
+requires ConceptMathOperations<T>
 void CubicPolynomial<T>::print_on(std::ostream& os) const
 {
   bool first = true;

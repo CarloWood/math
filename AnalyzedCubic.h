@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConceptMathOperations.h"
 #include "utils/has_print_on.h"
 #include <cmath>
 #include <limits>
@@ -11,6 +12,7 @@ using utils::has_print_on::operator<<;
 #endif
 
 template<typename T>
+requires ConceptMathOperations<T>
 class CubicPolynomial;
 
 class AnalyzedCubic
