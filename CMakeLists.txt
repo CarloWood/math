@@ -25,8 +25,6 @@ file(GLOB HEADER_FILES "*.h")
 # The list of source files.
 target_sources(math_ObjLib
   PRIVATE
-    "Polynomial.cxx"
-    "CubicPolynomial.cxx"
     "AnalyzedCubic.cxx"
     "Point.cxx"
     "Direction.cxx"

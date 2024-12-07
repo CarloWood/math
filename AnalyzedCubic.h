@@ -10,6 +10,7 @@ namespace math {
 using utils::has_print_on::operator<<;
 #endif
 
+template<typename T>
 class CubicPolynomial;
 
 class AnalyzedCubic
@@ -19,11 +20,11 @@ class AnalyzedCubic
   double signed_sqrt_D_{std::numeric_limits<double>::quiet_NaN()};
   double critical_point_w_;             // If extreme, then the one passed to initialize.
 #if CW_DEBUG
-  CubicPolynomial const* debug_cubic_{nullptr};
+  CubicPolynomial<double> const* debug_cubic_{nullptr};
 #endif
 
  public:
-  void initialize(math::CubicPolynomial const& cubic, int extreme_type); // extreme_type: 1 (maximum) or -1 (minimum).
+  void initialize(math::CubicPolynomial<double> const& cubic, int extreme_type); // extreme_type: 1 (maximum) or -1 (minimum).
 
   bool has_extrema() const
   {
@@ -50,7 +51,7 @@ class AnalyzedCubic
 
 #if CW_DEBUG
   // Return a pointer to the cubic that initalize was called with.
-  math::CubicPolynomial const* debug_cubic() const { return debug_cubic_; }
+  math::CubicPolynomial<double> const* debug_cubic() const { return debug_cubic_; }
 
   void print_on(std::ostream& os) const
   {

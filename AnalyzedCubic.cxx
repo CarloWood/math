@@ -4,7 +4,7 @@
 
 namespace math {
 
-void AnalyzedCubic::initialize(math::CubicPolynomial const& cubic, int extreme_type)
+void AnalyzedCubic::initialize(math::CubicPolynomial<double> const& cubic, int extreme_type)
 {
   // Use -1 for 'minimum' and 1 for 'maximum'.
   ASSERT(extreme_type == -1 || extreme_type == 1);

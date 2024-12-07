@@ -46,7 +46,7 @@
 #endif
 
 #ifndef HALLEY_ITERATIONS_TEST
-  if (coefficients_[3] == 0.0)
+  if (coefficients_[3] == 0)
   {
     // The cubic is actually a quadratic.
     QuadraticPolynomial qp(coefficients_[0], coefficients_[1], coefficients_[2]);
@@ -57,7 +57,7 @@
   double const c0 = coefficients_[0] / coefficients_[3];
   double const c1 = coefficients_[1] / coefficients_[3];
   double const c2 = coefficients_[2] / coefficients_[3];
-  double const d = utils::square(c2) - 3.0 * c1;
+  double const d = utils::square(c2) - 3 * c1;
 
   // The cubic is now monic:
   //
@@ -72,12 +72,12 @@
   //   0 = c1 + 2 c2 x + 3 x² --> x = ------------------------ = ---------------
   //                                             3                     3
   // Remember if we have local extrema or not.
-  bool const cubic_has_local_extrema = d > 0.0;
+  bool const cubic_has_local_extrema = d > 0;
 
   // Calculate the inflection point (where the second derivative is zero).
-  double const Ix = -c2 / 3.0;
+  double const Ix = -c2 / 3;
   // Magic (took me several days to find this).
-  double const M = 27.0 * c0 + (2.0 * d - 3.0 * c1) * c2;
+  double const M = 27 * c0 + (2 * d - 3 * c1) * c2;
 
   double C0, C1;
   double scale;
@@ -115,10 +115,10 @@
     //
     double const sqrt_d = std::sqrt(d);
     C0 = M / (d * sqrt_d);
-    C1 = -3.0;
+    C1 = -3;
 
     // The applied transform means that any root found must be scaled back by multiplying with
-    scale = sqrt_d / 3.0;
+    scale = sqrt_d / 3;
     // and then adding Ix back.
 
     // Define the value of the root in the case that C0 is zero.
@@ -149,20 +149,20 @@
 
     double const sqrt_md = std::sqrt(-d);
     C0 = M / (-d * sqrt_md);
-    C1 = 3.0;
+    C1 = 3;
 
     // The applied transform means that any root found must be scaled back by multiplying with
-    scale = sqrt_md / 3.0;
+    scale = sqrt_md / 3;
     // and then adding Ix back.
 
     // A special case of the initial guess of the root in the case that C0 is zero.
-    u = 0.0;
+    u = 0;
   }
 #endif  // no HALLEY_ITERATIONS_TEST
   Dout(dc::notice, "C0 = " << std::setprecision(18) << C0 << ", C1 = " << C1);
 
   // Determine if the inflection point is above or below the x-axis.
-  bool const inflection_point_y_larger_than_zero = C0 > 0.0;
+  bool const inflection_point_y_larger_than_zero = C0 > 0;
 
 #ifdef GETROOTS_ASSIGN_INITIAL_GUESS
 #ifndef RANDOM_CUBICS_TEST
@@ -185,24 +185,24 @@
 #ifdef HALLEY_ITERATIONS_TEST
   int max_limit = 100;
 #else
-  if (AI_LIKELY(C0 != 0.0))       // Is 0 not a root of the cubic?
+  if (AI_LIKELY(C0 != 0))       // Is 0 not a root of the cubic?
   {
     constexpr int max_limit = 10;
 #endif
     double const abs_C0 = std::abs(C0);
     if (!cubic_has_local_extrema && abs_C0 < 2.60987)
-      u = (utils::square(C0) / 81.0 - 1.0 / 3.0) * C0;
+      u = (utils::square(C0) / 81 - T{1} / 3) * C0;
     else
     {
       // We need the cube root of C0.
       double const cbrtC0 = std::cbrt(C0);
 
       if (!cubic_has_local_extrema)
-        u = -cbrtC0 + 1.0 / cbrtC0;
+        u = -cbrtC0 + 1 / cbrtC0;
       else
       {
         // This value is the root when S(C0) = 1.
-        double const root1 = -(cbrtC0 + 1.0 / cbrtC0);
+        double const root1 = -(cbrtC0 + 1 / cbrtC0);
 
 #ifndef HALLEY_ITERATIONS_TEST
         double SC0_approximation;
@@ -242,7 +242,7 @@
             // This polynomial has been determined with `minus_three_case.cxx` with
             // TILL_C0_half set to 0 (and polynomial_degree = 3).
           }
-          u = (1.0 - SC0_approximation) * root0 + SC0_approximation * root1;
+          u = (1 - SC0_approximation) * root0 + SC0_approximation * root1;
         }
         else
           u = root1;
@@ -268,7 +268,7 @@
       // Calculate Q(u) = C0 + C1 * u + u^3.
       double Q_u = C0 + u * (utils::square(u) + C1);
       // Calculate Q''(u) = 6 * u;
-      double half_Qpp_u = 3.0 * u;
+      double half_Qpp_u = 3 * u;
       // Calculate Q'(u) = C1 + 3 * u^2.
       double Qp_u = half_Qpp_u * u + C1;
       // Apply Halley's method.
@@ -285,12 +285,12 @@
         double Qu = C0 + (C1 + u * u) * u;
         double correct_root = u;
         // The derivative of Q(u) around the root is positive: dQ/du = C1 + 3 u^2, where u^2 >= 3.
-        double direction = Qu < 0.0 ? std::numeric_limits<double>::infinity() : -std::numeric_limits<double>::infinity();
-        while (Qu != 0.0)
+        double direction = Qu < 0 ? std::numeric_limits<double>::infinity() : -std::numeric_limits<double>::infinity();
+        while (Qu != 0)
         {
           double next_root = std::nextafter(correct_root, direction);
           double next_Qu = C0 + (C1 + next_root * next_root) * next_root;
-          double next_direction = next_Qu < 0.0 ? std::numeric_limits<double>::infinity() : -std::numeric_limits<double>::infinity();
+          double next_direction = next_Qu < 0 ? std::numeric_limits<double>::infinity() : -std::numeric_limits<double>::infinity();
           if (next_direction != direction)
           {
             if (std::abs(next_Qu) < 0.99 * std::abs(Qu))
@@ -319,7 +319,7 @@
           {
             // Do one more Halley iteration.
             double Q_u = C0 + u * (utils::square(u) + C1);
-            double half_Qpp_u = 3.0 * u;
+            double half_Qpp_u = 3 * u;
             double Qp_u = half_Qpp_u * u + C1;
             u += -Q_u * Qp_u / (utils::square(Qp_u) - Q_u * half_Qpp_u);
 
@@ -359,7 +359,7 @@
   }
 
 #ifdef RANDOM_CUBICS_TEST
-  stop = std::abs(u) > 15.0;
+  stop = std::abs(u) > 15;
 #endif
 
   roots_out[0] = u * scale + Ix;
