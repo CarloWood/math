@@ -31,6 +31,7 @@ target_sources(math_ObjLib
     "Line.cxx"
     "LinePiece.cxx"
     "bracket_zero.cxx"
+    "subsuper_string.cxx"
 
     ${HEADER_FILES}
 )
