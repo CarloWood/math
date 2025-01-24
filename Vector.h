@@ -40,6 +40,9 @@ class Vector
   double x() const { return x_; }
   double y() const { return y_; }
 
+  // Check if both coordinates are finite (not infinite or NaN).
+  bool isfinite() const { return std::isfinite(x_) && std::isfinite(y_); }
+
   // Return dot product with v2.
   double dot(Vector const& v2) const { return x_ * v2.x_ + y_ * v2.y_; }
 
