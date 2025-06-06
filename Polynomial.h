@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ConceptMathOperations.h"
+#include "utils/macros.h"
 #include <vector>
 #include <array>
 #include <ranges>
@@ -124,7 +125,9 @@ class Polynomial
   }
 
   Polynomial operator*=(Polynomial const& rhs);
+  PRAGMA_DIAGNOSTIC_PUSH_IGNORE("-Wnon-template-friend")
   friend Polynomial operator*(Polynomial const& lhs, Polynomial const& rhs);
+  PRAGMA_DIAGNOSTIC_POP
 
   Polynomial derivative() const
   {
