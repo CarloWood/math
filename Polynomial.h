@@ -125,7 +125,7 @@ class Polynomial
   }
 
   Polynomial operator*=(Polynomial const& rhs);
-  PRAGMA_DIAGNOSTIC_PUSH_IGNORE("-Wnon-template-friend")
+  PRAGMA_DIAGNOSTIC_PUSH_IGNORE_non_template_friend
   friend Polynomial operator*(Polynomial const& lhs, Polynomial const& rhs);
   PRAGMA_DIAGNOSTIC_POP
 
