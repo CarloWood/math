@@ -58,6 +58,7 @@ target_compile_features(math_ObjLib
 # Set link dependencies.
 target_link_libraries(math_ObjLib
   PRIVATE
+    AICxx::cwds
     AICxx::utils
     Eigen3::Eigen
 )
