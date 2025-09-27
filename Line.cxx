@@ -52,4 +52,11 @@ Point Line::intersection_with(Line const& L1) const
   return {point_.x() + lambda * direction_.x(), point_.y() + lambda * direction_.y()};
 }
 
+#ifdef CWDEBUG
+void Line::print_on(std::ostream& os) const
+{
+  os << "{point:" << point_ << ", direction:" << direction_ << "}";
+}
+#endif
+
 } // namespace math

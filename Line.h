@@ -23,6 +23,10 @@ class Line
   operator Direction const&() const { return direction_; }
 
   Point intersection_with(Line const& line2) const;
+
+#ifdef CWDEBUG
+  void print_on(std::ostream& os) const;
+#endif
 };
 
 } // namespace math
