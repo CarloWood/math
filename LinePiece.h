@@ -23,6 +23,10 @@ class LinePiece
   double length() const { return std::sqrt(utils::square(from_.x() - to_.x()) + utils::square(from_.y() - to_.y())); };
 
   Direction direction() const;
+
+#ifdef CWDEBUG
+  void print_on(std::ostream& os) const;
+#endif
 };
 
 } // namespace math
