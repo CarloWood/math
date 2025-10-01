@@ -35,7 +35,7 @@ class Vector
   explicit Vector(Point const& to) : x_(to.x()), y_(to.y()) { }
 
   // Construct a Vector from a LinePiece, pointing from the first point to the second point.
-  Vector(LinePiece const& line_piece) : math::Vector(line_piece.from(), line_piece.to()) { }
+  explicit Vector(LinePiece const& line_piece) : math::Vector(line_piece.from(), line_piece.to()) { }
 
   double x() const { return x_; }
   double y() const { return y_; }

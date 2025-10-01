@@ -30,7 +30,7 @@ class Direction
   // Construct a Direction from two points. If the second point is not given it defaults to the origin.
   explicit Direction(Point const& from, Point const& to) : x_(to.x() - from.x()), y_(to.y() - from.y())
   {
-    double len = std::sqrt(x_ * x_ + y_ * y_);
+    double len = std::hypot(x_, y_);
     x_ /= len;
     y_ /= len;
     ASSERT(!std::isnan(x_) && !std::isnan(y_));
