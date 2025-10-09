@@ -26,10 +26,6 @@ file(GLOB HEADER_FILES "*.h")
 target_sources(math_ObjLib
   PRIVATE
     "AnalyzedCubic.cxx"
-    "Point.cxx"
-    "Direction.cxx"
-    "Line.cxx"
-    "LinePiece.cxx"
     "bracket_zero.cxx"
     "subsuper_string.cxx"
 
@@ -57,10 +53,11 @@ target_compile_features(math_ObjLib
 
 # Set link dependencies.
 target_link_libraries(math_ObjLib
+  PUBLIC
+    Eigen3::Eigen
   PRIVATE
     AICxx::cwds
     AICxx::utils
-    Eigen3::Eigen
 )
 
 # Create an ALIAS target.
