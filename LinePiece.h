@@ -2,7 +2,6 @@
 #define MATH_LINE_PIECE_H
 
 #include "Point.h"
-#include "utils/square.h"
 #include <cmath>
 
 namespace math {
@@ -28,7 +27,7 @@ class LinePiece
 
   point_type const& from() const { return from_; }
   point_type const& to() const { return to_; }
-  double length() const { return std::sqrt(utils::square(from_.x() - to_.x()) + utils::square(from_.y() - to_.y())); };
+  T norm() const { return (to_.eigen() - from_.eigen()).norm(); }
 
   direction_type direction() const;
 

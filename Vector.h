@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <cmath>
+#include <type_traits>
 #ifdef CWDEBUG
 #include "utils/has_print_on.h"
 #endif
@@ -76,7 +77,7 @@ class Vector
   T dot(Vector const& v2) const { return v_.dot(v2.v_); }
 
   // Return the cross product with v2.
-  T cross(Vector const& v2) const requires (N == 2 || N == 3)
+  std::conditional_t<N == 2, T, Vector> cross(Vector const& v2) const requires (N == 2 || N == 3)
   {
     if constexpr (N == 2)
       return x() * v2.y() - y() * v2.x();

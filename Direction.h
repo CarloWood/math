@@ -41,11 +41,16 @@ class Direction
   {
     // Normalize the unit vector.
     d_.normalize();
-    //ASSERT(!d_.isnan());
+#if CW_DEBUG
+    bool has_nan = false;
+    for (int i = 0; i < N; ++i)
+      has_nan |= std::isnan(d_(i));
+    ASSERT(!has_nan);
+#endif
   }
 
   // If only one point is give, the direction is from the origin to that point.
-  explicit Direction(point_type const& to) : Direction(point_type{0.0, 0.0}, to) { }
+  explicit Direction(point_type const& to) : Direction(point_type(point_type::eigen_type::Zero()), to) { }
 
   // Construct a Direction from a LinePiece, pointing from the first point to the second point.
   Direction(line_piece_type const& line_piece) : Direction(line_piece.from(), line_piece.to()) { }

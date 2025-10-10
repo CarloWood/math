@@ -142,7 +142,10 @@ Vector<N, T> operator-(Point<N, T> const& to, Point<N, T> const& from)
 template<int N, typename T>
 bool operator!=(Point<N, T> const& p1, Point<N, T> const& p2)
 {
-  return p1.x_ != p2.x_ || p1.y_ != p2.y_;
+  for (int i = 0; i < N; ++i)
+    if (p1.p_(i) != p2.p_(i))
+      return true;
+  return false;
 }
 
 #ifdef CWDEBUG
