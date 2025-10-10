@@ -2,6 +2,7 @@
 #define MATH_VECTOR_H
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <cmath>
 #include <type_traits>
 #ifdef CWDEBUG
@@ -77,12 +78,12 @@ class Vector
   T dot(Vector const& v2) const { return v_.dot(v2.v_); }
 
   // Return the cross product with v2.
-  std::conditional_t<N == 2, T, Vector> cross(Vector const& v2) const requires (N == 2 || N == 3)
+  auto cross(Vector const& v2) const requires (N == 2 || N == 3)
   {
     if constexpr (N == 2)
       return x() * v2.y() - y() * v2.x();
-    else
-      return v_.cross(v2.v_);
+    else // N == 3
+      return Vector{v_.cross(v2.v_)};
   }
 
   // Construct a Direction from this vector.
