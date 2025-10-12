@@ -42,10 +42,10 @@ class Hyperblock
     }
   }
 
-  // Return the distance from the corner to the hyperplane.
-  T distance_of(CornerIndex ci, Hyperplane<n, T> const& plane) const
+  // Return the coordinates of corner ci as a vector.
+  VectorType const& operator[](CornerIndex ci) const
   {
-    return plane.distance(C_[ci]);
+    return C_[ci];
   }
 
   std::vector<VectorType> intersection_points(Hyperplane<n, T> const& plane);
