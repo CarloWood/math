@@ -32,6 +32,7 @@ class Hyperblock
     for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
     {
       VectorType c;
+      c.eigen().setZero();
       for (int d = 0; d < n; ++d)
       {
         int bit = 1 << d;
