@@ -91,14 +91,17 @@ enum Sign
 // * The signed distance of the origin from the plane is -ρ = b/‖N‖.
 //
 template<int N, std::floating_point T = double>          // N is the number of dimensions here.
-struct Hyperplane
+class Hyperplane
 {
+ public:
   using scalar_type = T;
   using vector_type = math::Vector<N, T>;                // N is the number of dimensions here; below 'N' in the comments refers to the normal_.
 
+ private:
   vector_type normal_;                                   // The normal of the hyperplane.
   T b_;                                                  // The plane constant where N·X + b = 0.
 
+ public:
   // Create a hyperplane that satisfies N·X + b = 0, where b = -N·P for some P on the plane.
   Hyperplane(vector_type const& normal, T b) : normal_(normal), b_(b) { }
 
