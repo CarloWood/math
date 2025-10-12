@@ -163,7 +163,12 @@ class Vector
   void print_on(std::ostream& os) const
   {
     os << '[';
-    os << v_;
+    char const* separator = "";
+    for (int i = 0; i < N; ++i)
+    {
+      os << separator << v_[i];
+      separator = ", ";
+    }
     os << ']';
   }
 #endif
