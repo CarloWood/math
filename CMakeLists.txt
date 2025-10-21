@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12...3.28)
+cmake_minimum_required(VERSION 3.19...4.1.2)
 
 project(math
   DESCRIPTION "C++ Mathematics utilities"
@@ -11,7 +11,7 @@ include(AICxxProject)
 # DEPENDENCIES
 #
 
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(Eigen3 3.3...<6.0 REQUIRED NO_MODULE)
 
 #==============================================================================
 # BUILD OBJECT LIBRARY
