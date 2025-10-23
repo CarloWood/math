@@ -7,11 +7,16 @@ project(math
 
 include(AICxxProject)
 
+# Use gitache for package versor.
+gitache_register_config_dir("${CMAKE_CURRENT_LIST_DIR}/cmake/gitache-configs")
+gitache_require_packages(versor)
+
 #==============================================================================
 # DEPENDENCIES
 #
 
 find_package(Eigen3 3.3...<6.0 REQUIRED NO_MODULE)
+find_package(versor 0.2.0...<1.0 CONFIG)
 
 #==============================================================================
 # BUILD OBJECT LIBRARY
@@ -55,6 +60,7 @@ target_compile_features(math_ObjLib
 target_link_libraries(math_ObjLib
   PUBLIC
     Eigen3::Eigen
+    versor::vsr_shared
   PRIVATE
     AICxx::cwds
     AICxx::utils
