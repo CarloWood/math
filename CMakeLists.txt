@@ -1,3 +1,4 @@
+# version 3.19 is required for find_package's version ranges.
 cmake_minimum_required(VERSION 3.19...4.1.2)
 
 project(math
@@ -15,7 +16,14 @@ gitache_require_packages(versor)
 # DEPENDENCIES
 #
 
-find_package(Eigen3 3.3...<6.0 REQUIRED NO_MODULE)
+# First try Eigen [5.0, 6.0).
+find_package(Eigen3 5.0 QUIET NO_MODULE)
+
+# If not found, accept Eigen [3.3, 4.0). There is no Eigen3 version 4.x.
+if (NOT Eigen3_FOUND)
+  find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+endif()
+
 find_package(versor 0.2.0...<1.0 CONFIG)
 
 #==============================================================================
