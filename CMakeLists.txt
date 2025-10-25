@@ -23,7 +23,8 @@ if (NOT Eigen3_FOUND)
   find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 endif()
 
-find_package(versor 0.2.0...<1.0 CONFIG)
+message(DEBUG "versor_ROOT = \"${versor_ROOT}\".")
+find_package(versor 0.2.0...<1.0 REQUIRED CONFIG)
 
 #==============================================================================
 # BUILD OBJECT LIBRARY
