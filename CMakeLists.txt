@@ -9,7 +9,6 @@ project(math
 include(AICxxProject)
 
 # Use gitache for package versor.
-gitache_register_config_dir("${CMAKE_CURRENT_LIST_DIR}/cmake/gitache-configs")
 gitache_require_packages(versor)
 
 #==============================================================================
