@@ -10,7 +10,7 @@
 namespace math {
 
 // Forward declare Universe.
-template<typename ID, int MAX_N>
+template<typename ID, int MAX_N, typename T>
 struct Universe;
 
 //-----------------------------------------------------------------------------
@@ -23,16 +23,16 @@ namespace detail {
 template<typename>
 struct is_universe : std::false_type { };
 
-template<typename ID, int MAX_N>
-struct is_universe<Universe<ID, MAX_N>> : std::true_type { };
+template<typename ID, int MAX_N, typename T>
+struct is_universe<Universe<ID, MAX_N, T>> : std::true_type { };
 
-template<typename T>
-constexpr bool is_universe_v = is_universe<T>::value;
+template<typename U>
+constexpr bool is_universe_v = is_universe<U>::value;
 
 } // namespace detail
 
-template<typename T>
-concept ConceptUniverse = detail::is_universe_v<std::remove_cvref_t<T>>;
+template<typename U>
+concept ConceptUniverse = detail::is_universe_v<std::remove_cvref_t<U>>;
 
 // End of ConceptUniverse
 //-----------------------------------------------------------------------------
@@ -50,12 +50,21 @@ namespace detail {
 // Trait to extract MAX_N.
 template<typename> struct universe_max_n;
 
-template<typename ID, int MAX_N>
-struct universe_max_n<Universe<ID, MAX_N>> : std::integral_constant<int, MAX_N> { };
+template<typename ID, int MAX_N, typename T>
+struct universe_max_n<Universe<ID, MAX_N, T>> : std::integral_constant<int, MAX_N> { };
 
 // Optional helper variable:
-template<typename T>
-constexpr int universe_max_n_v = universe_max_n<T>::value;
+template<typename U>
+constexpr int universe_max_n_v = universe_max_n<U>::value;
+
+// Trait to extract T.
+template<typename> struct universe_float_type;
+
+template<typename ID, int MAX_N, typename T>
+struct universe_float_type<Universe<ID, MAX_N, T>> { using type = T; };
+
+template<typename U>
+using universe_float_type_t = typename universe_float_type<U>::type;
 
 } // namespace detail
 
@@ -67,9 +76,15 @@ class Basis
   static constexpr int n = std::popcount(used_dimensions);
   using axes_type = utils::BitSet<utils::uint_leastN_t<detail::universe_max_n_v<U>>>;
   using subset_type = utils::BitSetPOD<typename axes_type::mask_type>;
+  using float_type = detail::universe_float_type_t<U>;
 
  private:
-  float_type dilation;
+  float_type scale_factor_;     // This basis is uniformly scaled with this factor. The norm of a vector is scale_factor_ larger than the same vector in Universe coordinates.
+
+ public:
+  Basis() : scale_factor_(1) { }
+
+  Basis(float_type scale_factor) : scale_factor_(scale_factor) { }
 };
 
 // End of Basis
@@ -84,9 +99,10 @@ class Basis
 // They have each a basis that can not be compared: there exists no transformation
 // between the two basis, not even if they have the same dimension.
 //
-template<typename ID, int MAX_N>
+template<typename ID, int MAX_N, typename T = double>
 struct Universe
 {
+  using float_type = T;
   static constexpr int max_n = MAX_N;
   using axes_mask_type = utils::uint_leastN_t<max_n>;
   using basis_type = Basis<Universe>;
@@ -106,8 +122,8 @@ PRAGMA_DIAGNOSTIC_POP
 };
 
 //static
-template<typename ID, int MAX_N>
-Basis<Universe<ID, MAX_N>> Universe<ID, MAX_N>::standard_basis;
+template<typename ID, int MAX_N, typename T>
+Basis<Universe<ID, MAX_N, T>> Universe<ID, MAX_N, T>::standard_basis;
 
 // End of Universe
 //=============================================================================
