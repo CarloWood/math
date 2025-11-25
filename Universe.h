@@ -79,7 +79,8 @@ class Basis
   using float_type = detail::universe_float_type_t<U>;
 
  private:
-  float_type scale_factor_;     // This basis is uniformly scaled with this factor. The norm of a vector is scale_factor_ larger than the same vector in Universe coordinates.
+  float_type scale_factor_;     // A unit vector in this Basis is scale_factor_ times the unit vector in Universe coordinates pointing the same way.
+                                // That means that the same abstract vector v has a norm that is scale_factor_ smaller expressed in this Basis than in Universe coordinates.
 
  public:
   Basis() : scale_factor_(1) { }
