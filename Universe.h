@@ -68,15 +68,15 @@ using universe_float_type_t = typename universe_float_type<U>::type;
 
 } // namespace detail
 
-template<ConceptUniverse U, auto used_dimensions = utils::create_mask<utils::uint_leastN_t<detail::universe_max_n_v<U>>, detail::universe_max_n_v<U>>()>
+template<ConceptUniverse U, int N = detail::universe_max_n_v<U>>
 class Basis
 {
  public:
+  static constexpr int n = N;
   using basis_type = Basis;
-  static constexpr int n = std::popcount(used_dimensions);
-  using axes_type = utils::BitSet<utils::uint_leastN_t<detail::universe_max_n_v<U>>>;
-  using subset_type = utils::BitSetPOD<typename axes_type::mask_type>;
   using float_type = detail::universe_float_type_t<U>;
+//  using axes_type = utils::BitSet<utils::uint_leastN_t<detail::universe_max_n_v<U>>>;
+//  using subset_type = utils::BitSetPOD<typename axes_type::mask_type>;
 
  private:
   float_type scale_factor_;     // A unit vector in this Basis is scale_factor_ times the unit vector in Universe coordinates pointing the same way.
@@ -105,20 +105,19 @@ struct Universe
 {
   using float_type = T;
   static constexpr int max_n = MAX_N;
-  using axes_mask_type = utils::uint_leastN_t<max_n>;
   using basis_type = Basis<Universe>;
-  using axes_type = basis_type::axes_type;
-  using subset_type = basis_type::subset_type;
+//  using axes_mask_type = utils::uint_leastN_t<max_n>;
+//  using axes_type = basis_type::axes_type;
+//  using subset_type = basis_type::subset_type;
 
   static basis_type standard_basis;
 
-  template<auto BitSetPOD>
+  template<int N>
   struct CoordinateSubspace
   {
-    static constexpr auto axes = BitSetPOD.m_bitmask;
-PRAGMA_DIAGNOSTIC_PUSH_IGNORE("-Wchanges-meaning")
-    using Basis = Basis<Universe, axes>;
-PRAGMA_DIAGNOSTIC_POP
+    static_assert(N <= MAX_N, "The CoordinateSubspace can't have more dimensions than its Universe.");
+//    static constexpr auto axes = BitSetPOD.m_bitmask;
+    using basis_type = Basis<Universe, N /*, axes*/>;
   };
 };
 
