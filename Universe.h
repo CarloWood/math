@@ -10,6 +10,7 @@
 #ifdef CWDEBUG
 #include <utils/has_print_on.h>
 #endif
+#include "debug.h"
 
 namespace math {
 #ifdef CWDEBUG
@@ -83,8 +84,11 @@ class Basis
   using basis_type = Basis;
   using float_type = detail::universe_float_type_t<U>;
   using rotation_matrix_type = Eigen::Matrix<float_type, detail::universe_max_n_v<U>, detail::universe_max_n_v<U>>;
-//  using axes_type = utils::BitSet<utils::uint_leastN_t<detail::universe_max_n_v<U>>>;
-//  using subset_type = utils::BitSetPOD<typename axes_type::mask_type>;
+
+  // A BitSet with at least as many bits as the number of axis of the universe.
+  using axes_type = utils::BitSet<utils::uint_leastN_t<detail::universe_max_n_v<U>>>;
+  // The POD type for that BitSet.
+  using subset_type = utils::BitSetPOD<typename axes_type::mask_type>;
 
  private:
   float_type scale_factor_;                     // A unit vector in this Basis is scale_factor_ times the unit vector in Universe coordinates pointing the same way.
@@ -96,13 +100,39 @@ class Basis
 
   Basis(float_type scale_factor) : scale_factor_(scale_factor), rotation_matrix_(rotation_matrix_type::Identity()) { }
 
+ private:
+  friend U;
+  // Construct a Basis with a rotation matrix that is all zeroes.
+  Basis(nullptr_t) : scale_factor_(1), rotation_matrix_(rotation_matrix_type::Zero()) { }
+
 #if CWDEBUG
+ public:
   void print_on(std::ostream& os) const;
 #endif
 };
 
 // End of Basis
 //=============================================================================
+
+template<int N>
+struct Permutation
+{
+  std::array<uint8_t, N> seq_{};
+
+  Permutation(std::array<uint8_t, N> const& seq) : seq_(seq) { }
+
+  template<std::integral Index>
+  Permutation(std::initializer_list<Index> perm)
+  {
+    ASSERT(static_cast<int>(perm.size()) == N);
+    auto it = perm.begin();
+    for (int i = 0; i < N; ++i, ++it)
+      seq_[i] = static_cast<uint8_t>(*it);
+  }
+
+  auto begin() const { return seq_.begin(); }
+  auto end() const { return seq_.end(); }
+};
 
 //=============================================================================
 // Universe
@@ -120,10 +150,9 @@ struct Universe
   static constexpr int max_n = MAX_N;
   using basis_type = Basis<Universe>;
   using rotation_matrix_type = basis_type::rotation_matrix_type;
-
-//  using axes_mask_type = utils::uint_leastN_t<max_n>;
-//  using axes_type = basis_type::axes_type;
-//  using subset_type = basis_type::subset_type;
+  using axes_mask_type = utils::uint_leastN_t<max_n>;
+  using axes_type = basis_type::axes_type;
+  using subset_type = basis_type::subset_type;
 
   static basis_type standard_basis;
 
@@ -131,14 +160,52 @@ struct Universe
   struct CoordinateSubspace
   {
     static_assert(N <= MAX_N, "The CoordinateSubspace can't have more dimensions than its Universe.");
-//    static constexpr auto axes = BitSetPOD.m_bitmask;
-    using basis_type = Basis<Universe, N /*, axes*/>;
+    using basis_type = Basis<Universe, N>;
+
+    // Return a basis from a permutation.
+    static basis_type from_permutation(Permutation<N> permutation, T scale = 1);
   };
 };
 
 //static
 template<typename ID, int MAX_N, typename T>
 Basis<Universe<ID, MAX_N, T>> Universe<ID, MAX_N, T>::standard_basis;
+
+//static
+template<typename ID, int MAX_N, typename T>
+template<int N>
+Universe<ID, MAX_N, T>::CoordinateSubspace<N>::basis_type
+Universe<ID, MAX_N, T>::CoordinateSubspace<N>::from_permutation(Permutation<N> permutation, T scale)
+{
+  Universe<ID, MAX_N, T>::CoordinateSubspace<N>::basis_type basis{nullptr};
+  basis.scale_factor_ = scale;
+
+  // Track which Universe axes are still free.
+  axes_mask_type all_axes_mask = utils::create_mask<axes_mask_type, max_n>();
+  axes_type remaining{all_axes_mask};
+  using Index = typename axes_type::Index;
+
+  auto col = permutation.begin();
+  for (int row = 0; row < N; ++row, ++col)
+  {
+    ASSERT(*col < max_n);
+    Index axis{utils::bitset::IndexPOD{static_cast<int8_t>(*col)}};
+    ASSERT(remaining.test(axis));          // Must be unused so far.
+    basis.rotation_matrix_(row, *col) = 1; // Place 1 at (row, col).
+    remaining.reset(axis);                 // Mark axis as used.
+  }
+
+  // Fill remaining rows with the unused Universe axes, ascending.
+  int row = N;
+  for (auto bit : remaining)
+  {
+    ASSERT(row < max_n);
+    Index axis = axes_type::mask2index(bit());
+    basis.rotation_matrix_(row++, axis()) = 1;
+  }
+
+  return basis;
+}
 
 // End of Universe
 //=============================================================================
