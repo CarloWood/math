@@ -46,13 +46,6 @@ if (OptionEnableLibcwd)
   )
 endif ()
 
-# Required include search-paths.
-#get_target_property(CWDS_INTERFACE_INCLUDE_DIRECTORIES AICxx::cwds INTERFACE_INCLUDE_DIRECTORIES)
-#target_include_directories(math_ObjLib
-#  PUBLIC
-#    "${CWDS_INTERFACE_INCLUDE_DIRECTORIES}" # For sys.h and debug.h.
-#)
-
 # Require support for C++20.
 target_compile_features(math_ObjLib
   PUBLIC cxx_std_20

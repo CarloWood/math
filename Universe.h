@@ -7,8 +7,14 @@
 #include <Eigen/Core>
 #include <type_traits>
 #include <bit>
+#ifdef CWDEBUG
+#include <utils/has_print_on.h>
+#endif
 
 namespace math {
+#ifdef CWDEBUG
+using utils::has_print_on::operator<<;
+#endif
 
 // Forward declare Universe.
 template<typename ID, int MAX_N, typename T>
@@ -89,6 +95,10 @@ class Basis
   Basis() : scale_factor_(1), rotation_matrix_(rotation_matrix_type::Identity()) { }
 
   Basis(float_type scale_factor) : scale_factor_(scale_factor), rotation_matrix_(rotation_matrix_type::Identity()) { }
+
+#if CWDEBUG
+  void print_on(std::ostream& os) const;
+#endif
 };
 
 // End of Basis
@@ -134,3 +144,12 @@ Basis<Universe<ID, MAX_N, T>> Universe<ID, MAX_N, T>::standard_basis;
 //=============================================================================
 
 } // namespace math
+
+#if CWDEBUG
+
+template<math::ConceptUniverse U, int N>
+void math::Basis<U, N>::print_on(std::ostream& os) const
+{
+  os << "{scale_factor:" << scale_factor_ << ", rotation_matrix:\n" << rotation_matrix_ << '}';
+}
+#endif
