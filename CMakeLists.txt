@@ -8,9 +8,6 @@ project(math
 
 include(AICxxProject)
 
-# Use gitache for package versor.
-gitache_require_packages(versor)
-
 #==============================================================================
 # DEPENDENCIES
 #
@@ -22,9 +19,6 @@ find_package(Eigen3 5.0 QUIET NO_MODULE)
 if (NOT Eigen3_FOUND)
   find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 endif()
-
-message(DEBUG "versor_ROOT = \"${versor_ROOT}\".")
-find_package(versor 0.2.0...<1.0 REQUIRED CONFIG)
 
 #==============================================================================
 # BUILD OBJECT LIBRARY
@@ -68,7 +62,6 @@ target_compile_features(math_ObjLib
 target_link_libraries(math_ObjLib
   PUBLIC
     Eigen3::Eigen
-    versor::vsr_shared
   PRIVATE
     AICxx::cwds
     AICxx::utils

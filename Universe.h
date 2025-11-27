@@ -4,7 +4,7 @@
 #include "utils/BitSet.h"
 #include "utils/macros.h"
 #include "utils/create_mask.h"
-#include <vsr/detail/vsr_multivector.h>
+#include <Eigen/Core>
 #include <type_traits>
 #include <bit>
 
@@ -67,15 +67,6 @@ struct universe_float_type<Universe<ID, MAX_N, T>> { using type = T; };
 template<typename U>
 using universe_float_type_t = typename universe_float_type<U>::type;
 
-// Trait to extract the rotor_type.
-template<typename> struct universe_rotor_type;
-
-template<typename ID, int MAX_N, typename T>
-struct universe_rotor_type<Universe<ID, MAX_N, T>> { using type = typename vsr::NERot<MAX_N, T>; };
-
-template<typename U>
-using universe_rotor_type_t = typename universe_rotor_type<U>::type;
-
 } // namespace detail
 
 template<ConceptUniverse U, int N = detail::universe_max_n_v<U>>
@@ -85,19 +76,19 @@ class Basis
   static constexpr int n = N;
   using basis_type = Basis;
   using float_type = detail::universe_float_type_t<U>;
-  using rotor_type = detail::universe_rotor_type_t<U>;
+  using rotation_matrix_type = Eigen::Matrix<float_type, detail::universe_max_n_v<U>, detail::universe_max_n_v<U>>;
 //  using axes_type = utils::BitSet<utils::uint_leastN_t<detail::universe_max_n_v<U>>>;
 //  using subset_type = utils::BitSetPOD<typename axes_type::mask_type>;
 
  private:
-  float_type scale_factor_;     // A unit vector in this Basis is scale_factor_ times the unit vector in Universe coordinates pointing the same way.
-                                // That means that the same abstract vector v has a norm that is scale_factor_ smaller expressed in this Basis than in Universe coordinates.
-  rotor_type rotor_;            // The rotor that needs to be applied to the Universe in order for its first N axis to line up with this basis.
+  float_type scale_factor_;                     // A unit vector in this Basis is scale_factor_ times the unit vector in Universe coordinates pointing the same way.
+                                                // That means that the same abstract vector v has a norm that is scale_factor_ smaller expressed in this Basis than in Universe coordinates.
+  rotation_matrix_type rotation_matrix_;        // Proper rotation that aligns the Universe standard basis with this Basis (first n axes retained).
 
  public:
-  Basis() : scale_factor_(1) { }
+  Basis() : scale_factor_(1), rotation_matrix_(rotation_matrix_type::Identity()) { }
 
-  Basis(float_type scale_factor) : scale_factor_(scale_factor) { }
+  Basis(float_type scale_factor) : scale_factor_(scale_factor), rotation_matrix_(rotation_matrix_type::Identity()) { }
 };
 
 // End of Basis
@@ -118,7 +109,7 @@ struct Universe
   using float_type = T;
   static constexpr int max_n = MAX_N;
   using basis_type = Basis<Universe>;
-  using rotor_type = basis_type::rotor_type;
+  using rotation_matrix_type = basis_type::rotation_matrix_type;
 
 //  using axes_mask_type = utils::uint_leastN_t<max_n>;
 //  using axes_type = basis_type::axes_type;
