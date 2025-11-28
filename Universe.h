@@ -171,6 +171,7 @@ struct Permutation
 template<typename ID, int MAX_N, typename T = double>
 struct Universe
 {
+  static_assert(MAX_N <= 64, "Universe::MAX_N must be <= 64 (integral masks are used).");
   using float_type = T;
   static constexpr int max_n = MAX_N;
   using basis_type = Basis<Universe>;
