@@ -130,6 +130,20 @@ struct Permutation
       seq_[i] = static_cast<uint8_t>(*it);
   }
 
+  bool is_odd() const
+  {
+    int count = 0;
+    uint64_t mask = 0;
+    for (uint8_t e : seq_)
+    {
+      uint64_t em = uint64_t{1} << e;
+      if ((mask & em))
+        ++count;
+      mask ^= (em - 1);
+    }
+    return (count & 1);
+  }
+
   auto begin() const { return seq_.begin(); }
   auto end() const { return seq_.end(); }
 };
@@ -163,7 +177,8 @@ struct Universe
     using basis_type = Basis<Universe, N>;
 
     // Return a basis from a permutation.
-    static basis_type from_permutation(Permutation<N> permutation, T scale = 1);
+    // If the permutation is odd, flip the sign of the basis axis at flip_output_axis_if_odd (default 0) to restore orientation.
+    static basis_type from_permutation(Permutation<N> permutation, T scale = 1, int flip_output_axis_if_odd = 0);
   };
 };
 
@@ -175,7 +190,7 @@ Basis<Universe<ID, MAX_N, T>> Universe<ID, MAX_N, T>::standard_basis;
 template<typename ID, int MAX_N, typename T>
 template<int N>
 Universe<ID, MAX_N, T>::CoordinateSubspace<N>::basis_type
-Universe<ID, MAX_N, T>::CoordinateSubspace<N>::from_permutation(Permutation<N> permutation, T scale)
+Universe<ID, MAX_N, T>::CoordinateSubspace<N>::from_permutation(Permutation<N> permutation, T scale, int flip_output_axis_if_odd)
 {
   Universe<ID, MAX_N, T>::CoordinateSubspace<N>::basis_type basis{nullptr};
   basis.scale_factor_ = scale;
@@ -185,13 +200,16 @@ Universe<ID, MAX_N, T>::CoordinateSubspace<N>::from_permutation(Permutation<N> p
   axes_type remaining{all_axes_mask};
   using Index = typename axes_type::Index;
 
+  ASSERT(flip_output_axis_if_odd >= 0 && flip_output_axis_if_odd < N);
+
+  bool const permutation_is_odd = permutation.is_odd();
   auto col = permutation.begin();
   for (int row = 0; row < N; ++row, ++col)
   {
     ASSERT(*col < max_n);
     Index axis{utils::bitset::IndexPOD{static_cast<int8_t>(*col)}};
     ASSERT(remaining.test(axis));          // Must be unused so far.
-    basis.rotation_matrix_(row, *col) = 1; // Place 1 at (row, col).
+    basis.rotation_matrix_(row, *col) = (permutation_is_odd && row == flip_output_axis_if_odd) ? -1 : 1;
     remaining.reset(axis);                 // Mark axis as used.
   }
 
