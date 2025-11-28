@@ -18,7 +18,7 @@ using utils::has_print_on::operator<<;
 #endif
 
 // Forward declare Universe.
-template<typename ID, int MAX_N, typename T>
+template<typename ID, size_t MAX_N, typename T>
 struct Universe;
 
 //-----------------------------------------------------------------------------
@@ -31,7 +31,7 @@ namespace detail {
 template<typename>
 struct is_universe : std::false_type { };
 
-template<typename ID, int MAX_N, typename T>
+template<typename ID, size_t MAX_N, typename T>
 struct is_universe<Universe<ID, MAX_N, T>> : std::true_type { };
 
 template<typename U>
@@ -56,17 +56,17 @@ namespace detail {
 // Trait to extract MAX_N.
 template<typename> struct universe_max_n;
 
-template<typename ID, int MAX_N, typename T>
-struct universe_max_n<Universe<ID, MAX_N, T>> : std::integral_constant<int, MAX_N> { };
+template<typename ID, size_t MAX_N, typename T>
+struct universe_max_n<Universe<ID, MAX_N, T>> : std::integral_constant<size_t, MAX_N> { };
 
 // Optional helper variable:
 template<typename U>
-constexpr int universe_max_n_v = universe_max_n<U>::value;
+constexpr size_t universe_max_n_v = universe_max_n<U>::value;
 
 // Trait to extract T.
 template<typename> struct universe_float_type;
 
-template<typename ID, int MAX_N, typename T>
+template<typename ID, size_t MAX_N, typename T>
 struct universe_float_type<Universe<ID, MAX_N, T>> { using type = T; };
 
 template<typename U>
@@ -74,7 +74,7 @@ using universe_float_type_t = typename universe_float_type<U>::type;
 
 } // namespace detail
 
-template<ConceptUniverse U, int N = detail::universe_max_n_v<U>>
+template<ConceptUniverse U, size_t N = detail::universe_max_n_v<U>>
 class Basis
 {
  public:
@@ -112,7 +112,7 @@ class Basis
 // End of Basis
 //=============================================================================
 
-template<int N>
+template<size_t N>
 struct Permutation
 {
   std::array<uint8_t, N> seq_{};
@@ -134,6 +134,10 @@ struct Permutation
 
   template<std::integral Index>
   Permutation(std::initializer_list<Index> perm) : Permutation(perm.begin(), perm.end()) { }
+
+  template<std::integral... Index>
+  requires (sizeof...(Index) == N)
+  explicit Permutation(Index... indices) : seq_{static_cast<uint8_t>(indices)...} { }
 
   bool is_odd() const
   {
@@ -163,7 +167,16 @@ struct Permutation
     return true;
   }
 #endif
+
+#if CWDEBUG
+ public:
+  void print_on(std::ostream& os) const;
+#endif
 };
+
+// CTAD guide: deduce N from the number of arguments.
+template<std::integral... Index>
+Permutation(Index...) -> Permutation<sizeof...(Index)>;
 
 //=============================================================================
 // Universe
@@ -174,7 +187,7 @@ struct Permutation
 // They have each a basis that can not be compared: there exists no transformation
 // between the two basis, not even if they have the same dimension.
 //
-template<typename ID, int MAX_N, typename T = double>
+template<typename ID, size_t MAX_N, typename T = double>
 struct Universe
 {
   static_assert(MAX_N <= 64, "Universe::MAX_N must be <= 64 (integral masks are used).");
@@ -188,29 +201,32 @@ struct Universe
 
   static basis_type standard_basis;
 
-  template<int N>
   struct CoordinateSubspace
   {
-    static_assert(N <= MAX_N, "The CoordinateSubspace can't have more dimensions than its Universe.");
-    using basis_type = Basis<Universe, N>;
+    template<size_t N>
+    using basis = Basis<Universe<ID, MAX_N, T>, N>;
 
     // Return a basis from a permutation.
     // If the permutation is odd, flip the sign of the basis axis at flip_output_axis_if_odd (default 0) to restore orientation.
-    static basis_type from_permutation(Permutation<N> permutation, T scale = 1, int flip_output_axis_if_odd = 0);
+    template<size_t N>
+    static Basis<Universe<ID, MAX_N, T>, N> from_permutation(Permutation<N> permutation, T scale = 1, int flip_output_axis_if_odd = 0);
   };
 };
 
 //static
-template<typename ID, int MAX_N, typename T>
+template<typename ID, size_t MAX_N, typename T>
 Basis<Universe<ID, MAX_N, T>> Universe<ID, MAX_N, T>::standard_basis;
 
 //static
-template<typename ID, int MAX_N, typename T>
-template<int N>
-Universe<ID, MAX_N, T>::CoordinateSubspace<N>::basis_type
-Universe<ID, MAX_N, T>::CoordinateSubspace<N>::from_permutation(Permutation<N> permutation, T scale, int flip_output_axis_if_odd)
+template<typename ID, size_t MAX_N, typename T>
+template<size_t N>
+Basis<Universe<ID, MAX_N, T>, N>
+Universe<ID, MAX_N, T>::CoordinateSubspace::from_permutation(Permutation<N> permutation, T scale, int flip_output_axis_if_odd)
 {
-  Universe<ID, MAX_N, T>::CoordinateSubspace<N>::basis_type basis{nullptr};
+  DoutEntering(dc::notice, libcwd::type_info_of<Universe<ID, MAX_N, T>>().demangled_name() <<
+      "::CoordinateSubspace::from_permutation(" << permutation << ", " << scale << ", " << flip_output_axis_if_odd << ")");
+
+  Basis<Universe<ID, MAX_N, T>, N> basis{nullptr};
   basis.scale_factor_ = scale;
 
   // Track which Universe axes are still free.
@@ -250,10 +266,22 @@ Universe<ID, MAX_N, T>::CoordinateSubspace<N>::from_permutation(Permutation<N> p
 } // namespace math
 
 #if CWDEBUG
-
-template<math::ConceptUniverse U, int N>
+template<math::ConceptUniverse U, size_t N>
 void math::Basis<U, N>::print_on(std::ostream& os) const
 {
   os << "{scale_factor:" << scale_factor_ << ", rotation_matrix:\n" << rotation_matrix_ << '}';
+}
+
+template<size_t N>
+void math::Permutation<N>::print_on(std::ostream& os) const
+{
+  os << '(';
+  char const* separator = "";
+  for (int element : seq_)
+  {
+    os << separator << element;
+    separator = " ";
+  }
+  os << ')';
 }
 #endif
