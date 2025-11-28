@@ -119,14 +119,21 @@ struct Permutation
 
   Permutation(std::array<uint8_t, N> const& seq) : seq_(seq) { }
 
-  template<std::integral Index>
-  Permutation(std::initializer_list<Index> perm)
+  template <std::input_iterator It>
+  Permutation(It begin, It end)
   {
-    ASSERT(static_cast<int>(perm.size()) == N);
-    auto it = perm.begin();
-    for (int i = 0; i < N; ++i, ++it)
-      seq_[i] = static_cast<uint8_t>(*it);
+    ASSERT(std::distance(begin, end) == N);
+    std::copy(begin, end, seq_.begin());
   }
+
+  template<std::integral Index>
+  Permutation(std::array<Index, N> const& perm) : Permutation(perm.begin(), perm.end()) { }
+
+  template<std::integral Index>
+  Permutation(Index const (&perm)[N]) : Permutation(&perm[0], &perm[N]) { }
+
+  template<std::integral Index>
+  Permutation(std::initializer_list<Index> perm) : Permutation(perm.begin(), perm.end()) { }
 
   bool is_odd() const
   {
@@ -147,6 +154,7 @@ struct Permutation
 
 #if CW_DEBUG
   // Check if the Permutation is valid for the given range.
+  // Return true iff every element of seq_ falls in the range [range_start, range_end).
   bool in_range(uint8_t range_start, uint8_t range_end) const
   {
     for (uint8_t e : seq_)
