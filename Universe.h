@@ -146,6 +146,17 @@ struct Permutation
 
   auto begin() const { return seq_.begin(); }
   auto end() const { return seq_.end(); }
+
+#if CW_DEBUG
+  // Check if the Permutation is valid for the given range.
+  bool in_range(uint8_t range_start, uint8_t range_end) const
+  {
+    for (uint8_t e : seq_)
+      if (!(range_start <= e && e < range_end))
+        return false;
+    return true;
+  }
+#endif
 };
 
 //=============================================================================
@@ -200,6 +211,7 @@ Universe<ID, MAX_N, T>::CoordinateSubspace<N>::from_permutation(Permutation<N> p
   axes_type remaining{all_axes_mask};
   using Index = typename axes_type::Index;
 
+  ASSERT(permutation.in_range(0, MAX_N));
   ASSERT(flip_output_axis_if_odd >= 0 && flip_output_axis_if_odd < N);
 
   bool const permutation_is_odd = permutation.is_odd();
