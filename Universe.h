@@ -48,10 +48,8 @@ concept ConceptUniverse = detail::is_universe_v<std::remove_cvref_t<U>>;
 //=============================================================================
 // Basis
 //
-// An affine subspace of n dimensions.
+// An affine subspace of N dimensions.
 //
-// used_dimensions : a bit mask (one bit for each dimension of U) where a set
-//                   bit means that that dimension is part of this basis.
 
 namespace detail {
 
