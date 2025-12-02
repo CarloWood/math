@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math/Vector.h"
+#include "debug.h"
 
 namespace math {
 
@@ -104,6 +105,10 @@ class Hyperplane
  public:
   // Create a hyperplane that satisfies N·X + b = 0, where b = -N·P for some P on the plane.
   Hyperplane(vector_type const& normal, T b) : normal_(normal), b_(b) { }
+
+  // Accessors.
+  vector_type const& normal() const { return normal_; }
+  T b() const { return b_; }
 
   // Return the signed distance in Euclidean units (positive in +N direction).
   T signed_distance(vector_type const& A) const
