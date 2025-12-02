@@ -4,6 +4,7 @@
 #include "utils/Vector.h"
 #include <concepts>
 #include <vector>
+#include <queue>
 #include <set>
 #ifdef CWDEBUG
 #include "utils/has_print_on.h"
@@ -402,21 +403,31 @@ void Hyperblock<n, T>::breadth_first_search(
 {
   using namespace detail;
 
-  // Store the first intersection point.
-  intersections.emplace_back(current_edge.intersection_point_);
-  current_edge.visited();
+  std::queue<Edge const*> queue;
+  queue.push(&current_edge);
 
-  // Loop over all faces for which the current edge is an entry point.
-  for (auto entry_face_iter = current_edge.entry_face_begin(); entry_face_iter != current_edge.entry_face_end(); ++entry_face_iter)
+  while (!queue.empty())
   {
-    FaceId const entry_face_id = *entry_face_iter;
-    auto face_segement = face_segments.find(entry_face_id);
-    EdgeId const exit_point = face_segement->second.exit_point();
-    auto exit_edge = edges.find(exit_point);
-    if (exit_edge->second.is_visited())
+    Edge const* edge = queue.front();
+    queue.pop();
+
+    if (edge->is_visited())
       continue;
 
-    breadth_first_search(exit_edge->second, edges, face_segments, intersections);
+    intersections.emplace_back(edge->intersection_point_);
+    edge->visited();
+
+    // Enqueue all exit edges reachable from faces for which this edge is an entry point.
+    for (auto entry_face_iter = edge->entry_face_begin(); entry_face_iter != edge->entry_face_end(); ++entry_face_iter)
+    {
+      FaceId const entry_face_id = *entry_face_iter;
+      auto face_segment = face_segments.find(entry_face_id);
+      EdgeId const exit_point = face_segment->second.exit_point();
+      auto exit_edge = edges.find(exit_point);
+      ASSERT(exit_edge != edges.end());
+      if (!exit_edge->second.is_visited())
+        queue.push(&exit_edge->second);
+    }
   }
 }
 
