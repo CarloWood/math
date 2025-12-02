@@ -65,7 +65,7 @@ enum Sign
 //            /    |  \_ Q = ρ·N
 //   S(O) = -ρ < 0 |
 //
-// The constructor of this class is accepts the normal vector N (not necessarily
+// The constructor of this class accepts the normal vector N (not necessarily
 // a unit vector) as first argument and the negative of the dot product of N with
 // some point P in the plane (b = -N·P).
 //
