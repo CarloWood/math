@@ -245,17 +245,11 @@ void Hyperblock<n, T>::Edge::store(bool entry_point, detail::FaceId const& face_
 template<int n, std::floating_point T>
 std::vector<typename Hyperblock<n, T>::vector_type> Hyperblock<n, T>::intersection_points(Hyperplane<n, T> const& plane)
 {
-  DoutEntering(dc::notice, "Hyperblock<" << n << ", " << type_info_of<T>().demangled_name() << ">::intersection_points(" << plane << ")");
   std::vector<vector_type> intersections;
 
   utils::Vector<Sign, CornerIndex> side(number_of_corners);
   for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
     side[ci] = plane.side(C_[ci]);
-
-  Dout(dc::notice|continued_cf, "side = ");
-  for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
-    Dout(dc::continued, (side[ci] == positive ? "+" : side[ci] == in_plane ? "0" : "-"));
-  Dout(dc::finish, "");
 
   using namespace detail;
 
