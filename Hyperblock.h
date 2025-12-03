@@ -159,7 +159,7 @@ class Hyperblock
       c.eigen().setZero();
       for (int d = 0; d < n; ++d)
       {
-        int bit = 1 << d;
+        size_t const bit = detail::to_mask(d);
         if ((ci.get_value() & bit))
           c[d] += base[d];
       }
@@ -258,6 +258,58 @@ std::vector<typename Hyperblock<n, T>::vector_type> Hyperblock<n, T>::intersecti
   Dout(dc::finish, "");
 
   using namespace detail;
+
+  // Push in_plane corners to one side, so we consistently count 'cut' edges such that
+  // the respective corner is counted the minimum number of times (zero or one time in the 3D case):
+  // push it to the side that has the most adjacent corners.
+  //
+  // For example,
+  // consider the case where two adjacent corners, A and B, are in_plane (0).
+  // Let the corner C be adjacent to A and on the 'negative' side of the plane,
+  // and the corner D also adjacent to A but on the 'positive' side of the plane.
+  // Likewise for E and F:
+  //
+  //                  A               B
+  //                   0---------------0
+  //                  / \             / \
+  //                 /   \           /   \
+  //                /     \         /     \
+  //               /       \       /       \
+  //              -         +     -         +
+  //             C           D   E           F
+  //
+  // Then either A or B is encountered first. Lets say A.
+  // In that case we count an equal number of adjacent corners to be on the
+  // positive side as on the negative side (one each), in which the tie-breaker
+  // is used to put A on the positive side.
+  //
+  // Next B is encountered which now sees one adjacent corner (E) to be
+  // on the negative side and two (A and F) to be on the positive side.
+  // Therefore B is also put on the positive side.
+  //
+  // This is consistent with moving the whole plane an infinitesimal bit
+  // in the direction opposite to its normal.
+  //
+  for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
+  {
+    if (side[ci] != in_plane)
+      continue;
+
+    int pos = 0, neg = 0;
+    for (int d = 0; d < n; ++d)
+    {
+      size_t const bit = to_mask(d);
+      CornerIndex const adjacent_ci{ci.get_value() ^ bit};
+      Sign const adjacent_side = side[adjacent_ci];
+      if (adjacent_side == positive)
+        ++pos;
+      else if (adjacent_side == negative)
+        ++neg;
+    }
+
+    // Any side will do, but this is a good choice.
+    side[ci] = (pos >= neg) ? positive : negative;
+  }
 
   // A map from EdgeId to Edge data.
   std::map<EdgeId, Edge> edges;
