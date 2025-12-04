@@ -4,6 +4,7 @@
 #include "utils/BitSet.h"
 #include "utils/macros.h"
 #include "utils/create_mask.h"
+#include "utils/almost_equal.h"
 #include <Eigen/Core>
 #include <type_traits>
 #include <bit>
@@ -98,10 +99,88 @@ class Basis
 
   Basis(float_type scale_factor) : scale_factor_(scale_factor), rotation_matrix_(rotation_matrix_type::Identity()) { }
 
+  // Apply the unique proper rotation that maps v1 to v2 by a rotation in the plane
+  // spanned by v1 and v2. The orthogonal complement is left invariant.
+  // If v1·v2 < 0 then v2 is first negated so that the rotation angle is at most 90 degrees.
+  void rotate_from_to(math::Vector<N, float_type> v1, math::Vector<N, float_type> v2)
+  {
+    DoutEntering(dc::notice, "Basis::rotate_from_to(" << v1 << ", " << v2 << ")");
+
+    constexpr float_type zero = 0;
+    constexpr float_type one  = 1;
+
+    // Normalize input vectors.
+    if (!v1.normalize() || !v2.normalize())
+      return;
+
+    // Make sure the angle between v1 and v2 is at most 90 degrees by possibly flipping v2.
+    float_type cos_theta = v1.dot(v2);
+    if (cos_theta < zero)
+    {
+      v2.negate();
+      cos_theta = -cos_theta;
+    }
+
+    // Can be constexpr as of C++26.
+    const/*expr*/ float_type abs_relative_error = std::sqrt(std::numeric_limits<float_type>::epsilon());
+
+    // If v1 and v2 are (almost) identical then there is no rotation.
+    if (utils::almost_equal(cos_theta, one, abs_relative_error))
+      return;
+
+    // Now dot <= 1 - eps such that (see comment with utils::almost_equal):
+    //
+    //                           |    1 - dot    |   |     eps       |
+    //      abs_relative_error = | ------------- | = | ------------- | ~ eps
+    //                           | (1 + dot) / 2 |   | (2 - eps) / 2 |
+    //
+    // Thus dot = a·b = cos(θ) <= 1 - abs_relative_error
+    // and sin(θ) >= √(1 - (1 - abs_relative_error)²) ~ √(1 - (1 - 2 abs_relative_error + ⋯)) = √(2 abs_relative_error).
+
+    // Component of v2 orthogonal to v1.
+    auto vo = v2 - cos_theta * v1;
+
+    //                vn ^       v2=Rv1
+    //                vo ^‾‾‾‾‾‾^
+    //                   |     /⋮
+    //     R vn          |    / ⋮
+    //       ·.          |  1/  ⋮ ← sin(θ)
+    //       ⋮θ ·.       |  /   ⋮
+    // cos(θ)⋮     ·.    | /    ⋮
+    //       ⋮        ·.θ|/θ    ⋮
+    //      -+-----------o------+-------> v1
+    //            ↑          ↑    1
+    //         sin(θ)     cos(θ)
+
+    float_type sin_theta = vo.norm();
+    ASSERT(sin_theta > std::sqrt(abs_relative_error));
+
+    // Normalize vo.
+    auto vn = vo / sin_theta;
+
+    // Now {v1, vn} is an orthonormal basis for the rotation plane.
+
+    // Build the rotation matrix R that acts as:
+    //   R v1 = v2 = cos_theta * v1 + sin_theta * vn
+    //   R vn =     -sin_theta * v1 + cos_theta * vn
+    //   R w  = w  for all w perpendicular to v1 and vn.
+
+    auto const& e1 = v1.eigen();
+    auto const& en = vn.eigen();
+    auto const& eo = vo.eigen();
+
+    rotation_matrix_type const A =
+      (cos_theta - one) * (e1 * e1.transpose() + en * en.transpose()) +
+                          (eo * e1.transpose() - e1 * eo.transpose());
+
+    rotation_matrix_.setIdentity();
+    rotation_matrix_ += A;
+  }
+
  private:
   friend U;
   // Construct a Basis with a rotation matrix that is all zeroes.
-  Basis(nullptr_t) : scale_factor_(1), rotation_matrix_(rotation_matrix_type::Zero()) { }
+  Basis(std::nullptr_t) : scale_factor_(1), rotation_matrix_(rotation_matrix_type::Zero()) { }
 
 #if CWDEBUG
  public:
@@ -111,6 +190,16 @@ class Basis
 
 // End of Basis
 //=============================================================================
+
+template<ConceptUniverse U, size_t N = detail::universe_max_n_v<U>>
+class StandardBasis : public Basis<U, N>
+{
+ public:
+   math::Vector<N, typename Basis<U, N>::float_type> e(int i) const
+   {
+     return {math::Vector<N, typename Basis<U, N>::float_type>::eigen_type::Unit(i)};
+   }
+};
 
 template<size_t N>
 struct Permutation
@@ -199,7 +288,7 @@ struct Universe
   using axes_type = basis_type::axes_type;
   using subset_type = basis_type::subset_type;
 
-  static basis_type standard_basis;
+  static StandardBasis<Universe> standard_basis;
 
   struct CoordinateSubspace
   {
@@ -215,7 +304,7 @@ struct Universe
 
 //static
 template<typename ID, size_t MAX_N, typename T>
-Basis<Universe<ID, MAX_N, T>> Universe<ID, MAX_N, T>::standard_basis;
+StandardBasis<Universe<ID, MAX_N, T>> Universe<ID, MAX_N, T>::standard_basis;
 
 //static
 template<typename ID, size_t MAX_N, typename T>

@@ -5,8 +5,13 @@
 #include <Eigen/Geometry>
 #include <cmath>
 #include <type_traits>
+#include "debug.h"
 #ifdef CWDEBUG
 #include "utils/has_print_on.h"
+#endif
+#if CW_DEBUG
+#include "utils/almost_equal.h"
+#include <limits>
 #endif
 
 namespace math {
@@ -115,6 +120,17 @@ class Vector
     return finite;
   }
 
+  // Returns true upon success.
+  bool normalize()
+  {
+    // Turn the vector into a unit vector.
+    v_.normalize();
+    if (!isfinite())
+      return false;
+    ASSERT(utils::almost_equal(v_.squaredNorm(), 1.0, 1024.0 * std::numeric_limits<T>::epsilon()));
+    return true;
+  }
+
  public:
   // Return the vector rotated 90 degrees counter-clockwise.
   Vector rotate_90_degrees() const requires (N == 2) { return { -y(), x() }; }
@@ -151,6 +167,18 @@ class Vector
   {
     v_ /= scalar;
     return *this;
+  }
+
+  // Negate this vector.
+  void negate()
+  {
+    v_ = -v_;
+  }
+
+  // Return the inverse.
+  Vector operator-() const
+  {
+    return {-v_};
   }
 
   // Divide by a scalar.

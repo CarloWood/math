@@ -94,12 +94,14 @@ class Direction
       !(N == 1 && ((std::same_as<std::remove_cvref_t<U>, Direction> || ...))))  // Do not replace copy/move constructor.
   constexpr Direction(U&&... xs) : d_(static_cast<T>(std::forward<U>(xs))...) { }
 
+  Direction(eigen_type d) : d_(d) { }
+
  public:
   // Return the direction rotated 90 degrees counter-clockwise.
   Direction normal() const requires (N == 2) { return { -y(), x() }; }
 
-  // Return the direction rotated 180 degrees.
-  Direction inverse() const requires (N == 2) { return { -x(), -y() }; }
+  // Return the inverse of the direction (aka rotated 180 degrees if N=2).
+  Direction inverse() const { return {-eigen()}; }
 
   // Return the direction rotated 270 degrees.
   Direction normal_inverse() const requires (N == 2) { return { y(), -x() }; }
