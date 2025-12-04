@@ -173,6 +173,7 @@ class Hyperblock
     return C_[ci];
   }
 
+  // Run over all corners of the HyperBlock by index.
   CornerIndex ibegin() const { return C_.ibegin(); }
   CornerIndex iend() const { return C_.iend(); }
 
