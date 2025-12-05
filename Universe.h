@@ -1,5 +1,6 @@
 #pragma once
 
+#include "math/Vector.h"
 #include "utils/uint_leastN_t.h"
 #include "utils/BitSet.h"
 #include "utils/macros.h"
@@ -8,6 +9,7 @@
 #include <Eigen/Core>
 #include <type_traits>
 #include <bit>
+#include <limits>
 #ifdef CWDEBUG
 #include <utils/has_print_on.h>
 #endif
@@ -80,19 +82,40 @@ class Basis
 {
  public:
   static constexpr int n = N;
+  static constexpr int max_n = detail::universe_max_n_v<U>;
   using basis_type = Basis;
   using float_type = detail::universe_float_type_t<U>;
-  using rotation_matrix_type = Eigen::Matrix<float_type, detail::universe_max_n_v<U>, detail::universe_max_n_v<U>>;
+  using rotation_matrix_type = Eigen::Matrix<float_type, max_n, max_n>;
 
   // A BitSet with at least as many bits as the number of axis of the universe.
-  using axes_type = utils::BitSet<utils::uint_leastN_t<detail::universe_max_n_v<U>>>;
+  using axes_type = utils::BitSet<utils::uint_leastN_t<max_n>>;
   // The POD type for that BitSet.
   using subset_type = utils::BitSetPOD<typename axes_type::mask_type>;
 
  private:
-  float_type scale_factor_;                     // A unit vector in this Basis is scale_factor_ times the unit vector in Universe coordinates pointing the same way.
-                                                // That means that the same abstract vector v has a norm that is scale_factor_ smaller expressed in this Basis than in Universe coordinates.
-  rotation_matrix_type rotation_matrix_;        // Proper rotation that aligns the Universe standard basis with this Basis (first n axes retained).
+  // A unit vector in this Basis is scale_factor_ times the unit vector in Universe
+  // coordinates pointing the same way. That means that the same abstract vector v
+  // has a norm that is scale_factor_ smaller expressed in this Basis than in
+  // Universe coordinates.
+  float_type scale_factor_;
+
+  // Proper rotation that converts Universe standard coordinates to this Basis:
+  // for any Universe vector v (in standard coordinates), rotation_matrix_ * v
+  // yields the coordinates of v in the Basis.
+  //
+  // For example, in a 5D universe containing a 3D subspace that is spanned by
+  // the (5D) orthogonal unit vectors x̂, ŷ and ẑ (in universe coordinates),
+  // rotation_matrix_ would be:
+  //
+  //                          ⎛ <⋯ row unit vector x̂ ⋯> ⎞       ⎫
+  //                          ⎜ <⋯ row unit vector ŷ ⋯> ⎟       ⎬ The first N rows are the N basis axes expressed as unit vectors in Universe coordinates.
+  //   rotation_matrix_ (R) = ⎜ <⋯ row unit vector ẑ ⋯> ⎟       ⎭
+  //                          ⎜       orthonormal       ⎟       ⎞ The remaining rows form an orthonormal completion of the Universe.
+  //                          ⎝       completion        ⎠       ⎠
+  //
+  // Such that `Rx̂ = (1, 0, 0, 0, 0)`, `Rŷ = (0, 1, 0, 0, 0)` and `Rẑ = (0, 0, 1, 0, 0)`.
+  // In other words, it expresses vectors in Universe coordinates as vectors in Basis coordinates.
+  rotation_matrix_type rotation_matrix_;
 
  public:
   Basis() : scale_factor_(1), rotation_matrix_(rotation_matrix_type::Identity()) { }
@@ -102,80 +125,7 @@ class Basis
   // Apply the unique proper rotation that maps v1 to v2 by a rotation in the plane
   // spanned by v1 and v2. The orthogonal complement is left invariant.
   // If v1·v2 < 0 then v2 is first negated so that the rotation angle is at most 90 degrees.
-  void rotate_from_to(math::Vector<N, float_type> v1, math::Vector<N, float_type> v2)
-  {
-    DoutEntering(dc::notice, "Basis::rotate_from_to(" << v1 << ", " << v2 << ")");
-
-    constexpr float_type zero = 0;
-    constexpr float_type one  = 1;
-
-    // Normalize input vectors.
-    if (!v1.normalize() || !v2.normalize())
-      return;
-
-    // Make sure the angle between v1 and v2 is at most 90 degrees by possibly flipping v2.
-    float_type cos_theta = v1.dot(v2);
-    if (cos_theta < zero)
-    {
-      v2.negate();
-      cos_theta = -cos_theta;
-    }
-
-    // Can be constexpr as of C++26.
-    const/*expr*/ float_type abs_relative_error = std::sqrt(std::numeric_limits<float_type>::epsilon());
-
-    // If v1 and v2 are (almost) identical then there is no rotation.
-    if (utils::almost_equal(cos_theta, one, abs_relative_error))
-      return;
-
-    // Now dot <= 1 - eps such that (see comment with utils::almost_equal):
-    //
-    //                           |    1 - dot    |   |     eps       |
-    //      abs_relative_error = | ------------- | = | ------------- | ~ eps
-    //                           | (1 + dot) / 2 |   | (2 - eps) / 2 |
-    //
-    // Thus dot = a·b = cos(θ) <= 1 - abs_relative_error
-    // and sin(θ) >= √(1 - (1 - abs_relative_error)²) ~ √(1 - (1 - 2 abs_relative_error + ⋯)) = √(2 abs_relative_error).
-
-    // Component of v2 orthogonal to v1.
-    auto vo = v2 - cos_theta * v1;
-
-    //                vn ^       v2=Rv1
-    //                vo ^‾‾‾‾‾‾^
-    //                   |     /⋮
-    //     R vn          |    / ⋮
-    //       ·.          |  1/  ⋮ ← sin(θ)
-    //       ⋮θ ·.       |  /   ⋮
-    // cos(θ)⋮     ·.    | /    ⋮
-    //       ⋮        ·.θ|/θ    ⋮
-    //      -+-----------o------+-------> v1
-    //            ↑          ↑    1
-    //         sin(θ)     cos(θ)
-
-    float_type sin_theta = vo.norm();
-    ASSERT(sin_theta > std::sqrt(abs_relative_error));
-
-    // Normalize vo.
-    auto vn = vo / sin_theta;
-
-    // Now {v1, vn} is an orthonormal basis for the rotation plane.
-
-    // Build the rotation matrix R that acts as:
-    //   R v1 = v2 = cos_theta * v1 + sin_theta * vn
-    //   R vn =     -sin_theta * v1 + cos_theta * vn
-    //   R w  = w  for all w perpendicular to v1 and vn.
-
-    auto const& e1 = v1.eigen();
-    auto const& en = vn.eigen();
-    auto const& eo = vo.eigen();
-
-    rotation_matrix_type const A =
-      (cos_theta - one) * (e1 * e1.transpose() + en * en.transpose()) +
-                          (eo * e1.transpose() - e1 * eo.transpose());
-
-    rotation_matrix_.setIdentity();
-    rotation_matrix_ += A;
-  }
+  void rotate_from_to(typename U::vector_type v1, typename U::vector_type v2);
 
  private:
   friend U;
@@ -287,6 +237,7 @@ struct Universe
   using axes_mask_type = utils::uint_leastN_t<max_n>;
   using axes_type = basis_type::axes_type;
   using subset_type = basis_type::subset_type;
+  using vector_type = math::Vector<max_n, T>;
 
   static StandardBasis<Universe> standard_basis;
 
@@ -351,6 +302,83 @@ Universe<ID, MAX_N, T>::CoordinateSubspace::from_permutation(Permutation<N> perm
 
 // End of Universe
 //=============================================================================
+
+template<ConceptUniverse U, size_t N>
+void Basis<U, N>::rotate_from_to(typename U::vector_type v1, typename U::vector_type v2)
+{
+  DoutEntering(dc::notice, "Basis<" << libcwd::type_info_of<U>().demangled_name() << ", " << N << ">::rotate_from_to(" << v1 << ", " << v2 << ")");
+
+  constexpr float_type zero = 0;
+  constexpr float_type one  = 1;
+
+  // Normalize input vectors.
+  if (!v1.normalize() || !v2.normalize())
+    return;
+
+  // Make sure the angle between v1 and v2 is at most 90 degrees by possibly flipping v2.
+  float_type cos_theta = v1.dot(v2);
+  if (cos_theta < zero)
+  {
+    v2.negate();
+    cos_theta = -cos_theta;
+  }
+
+  // Can be constexpr as of C++26.
+  const/*expr*/ float_type abs_relative_error = std::sqrt(std::numeric_limits<float_type>::epsilon());
+
+  // If v1 and v2 are (almost) identical then there is no rotation.
+  if (utils::almost_equal(cos_theta, one, abs_relative_error))
+    return;
+
+  // Now dot <= 1 - eps such that (see comment with utils::almost_equal):
+  //
+  //                           |    1 - dot    |   |     eps       |
+  //      abs_relative_error = | ------------- | = | ------------- | ~ eps
+  //                           | (1 + dot) / 2 |   | (2 - eps) / 2 |
+  //
+  // Thus dot = a·b = cos(θ) <= 1 - abs_relative_error
+  // and sin(θ) >= √(1 - (1 - abs_relative_error)²) ~ √(1 - (1 - 2 abs_relative_error + ⋯)) = √(2 abs_relative_error).
+
+  // Component of v2 orthogonal to v1.
+  auto vo = v2 - cos_theta * v1;
+
+  //                vn ^       v2=Rv1
+  //                vo ^‾‾‾‾‾‾^
+  //                   |     /⋮
+  //     R vn          |    / ⋮
+  //       ·.          |  1/  ⋮ ← sin(θ)
+  //       ⋮θ ·.       |  /   ⋮
+  // cos(θ)⋮     ·.    | /    ⋮
+  //       ⋮        ·.θ|/θ    ⋮
+  //      -+-----------o------+-------> v1
+  //            ↑          ↑    1
+  //         sin(θ)     cos(θ)
+
+  float_type sin_theta = vo.norm();
+  ASSERT(sin_theta > std::sqrt(abs_relative_error));
+
+  // Normalize vo.
+  auto vn = vo / sin_theta;
+
+  // Now {v1, vn} is an orthonormal basis for the rotation plane.
+
+  // Build the rotation matrix R that acts as:
+  //   R v1 = v2 = cos_theta * v1 + sin_theta * vn
+  //   R vn =     -sin_theta * v1 + cos_theta * vn
+  //   R w  = w  for all w perpendicular to v1 and vn.
+
+  auto const& e1 = v1.eigen();
+  auto const& en = vn.eigen();
+  auto const& eo = vo.eigen();
+
+  rotation_matrix_type const A =
+    (cos_theta - one) * (e1 * e1.transpose() + en * en.transpose()) +
+                        (eo * e1.transpose() - e1 * eo.transpose());
+
+  // Define and apply incremental rotation R.
+  rotation_matrix_type const R = rotation_matrix_type::Identity() + A;
+  rotation_matrix_ = R * rotation_matrix_;
+}
 
 } // namespace math
 
