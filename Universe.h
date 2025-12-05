@@ -6,6 +6,8 @@
 #include "utils/macros.h"
 #include "utils/create_mask.h"
 #include "utils/almost_equal.h"
+#include "utils/AIAlert.h"
+#include "utils/print_range.h"
 #include <Eigen/Core>
 #include <type_traits>
 #include <bit>
@@ -75,6 +77,9 @@ struct universe_float_type<Universe<ID, MAX_N, T>> { using type = T; };
 template<typename U>
 using universe_float_type_t = typename universe_float_type<U>::type;
 
+template<ConceptUniverse U, int N>
+class BasisBuilder;
+
 } // namespace detail
 
 template<ConceptUniverse U, size_t N = detail::universe_max_n_v<U>>
@@ -85,6 +90,7 @@ class Basis
   static constexpr int max_n = detail::universe_max_n_v<U>;
   using basis_type = Basis;
   using float_type = detail::universe_float_type_t<U>;
+  using vector_type = Vector<max_n, float_type>;
   using rotation_matrix_type = Eigen::Matrix<float_type, max_n, max_n>;
 
   // A BitSet with at least as many bits as the number of axis of the universe.
@@ -122,10 +128,12 @@ class Basis
 
   Basis(float_type scale_factor) : scale_factor_(scale_factor), rotation_matrix_(rotation_matrix_type::Identity()) { }
 
+  Basis(detail::BasisBuilder<U, N> builder);
+
   // Apply the unique proper rotation that maps v1 to v2 by a rotation in the plane
   // spanned by v1 and v2. The orthogonal complement is left invariant.
   // If v1·v2 < 0 then v2 is first negated so that the rotation angle is at most 90 degrees.
-  void rotate_from_to(typename U::vector_type v1, typename U::vector_type v2);
+  void rotate_from_to(vector_type v1, vector_type v2);
 
  private:
   friend U;
@@ -145,9 +153,9 @@ template<ConceptUniverse U, size_t N = detail::universe_max_n_v<U>>
 class StandardBasis : public Basis<U, N>
 {
  public:
-   math::Vector<N, typename Basis<U, N>::float_type> e(int i) const
+   Vector<N, typename Basis<U, N>::float_type> e(int i) const
    {
-     return {math::Vector<N, typename Basis<U, N>::float_type>::eigen_type::Unit(i)};
+     return {Vector<N, typename Basis<U, N>::float_type>::eigen_type::Unit(i)};
    }
 };
 
@@ -237,7 +245,7 @@ struct Universe
   using axes_mask_type = utils::uint_leastN_t<max_n>;
   using axes_type = basis_type::axes_type;
   using subset_type = basis_type::subset_type;
-  using vector_type = math::Vector<max_n, T>;
+  using vector_type = Vector<max_n, T>;
 
   static StandardBasis<Universe> standard_basis;
 
@@ -304,7 +312,7 @@ Universe<ID, MAX_N, T>::CoordinateSubspace::from_permutation(Permutation<N> perm
 //=============================================================================
 
 template<ConceptUniverse U, size_t N>
-void Basis<U, N>::rotate_from_to(typename U::vector_type v1, typename U::vector_type v2)
+void Basis<U, N>::rotate_from_to(vector_type v1, vector_type v2)
 {
   DoutEntering(dc::notice, "Basis<" << libcwd::type_info_of<U>().demangled_name() << ", " << N << ">::rotate_from_to(" << v1 << ", " << v2 << ")");
 
@@ -380,17 +388,83 @@ void Basis<U, N>::rotate_from_to(typename U::vector_type v1, typename U::vector_
   rotation_matrix_ = R * rotation_matrix_;
 }
 
-} // namespace math
+// An n-dimensional subspace, defined by orthonormal vectors in universe coordinates.
+template<ConceptUniverse U, int N>
+class SubSpace
+{
+ public:
+  static constexpr int n = N;
+  static constexpr int max_n = U::max_n;
+  using float_type  = typename U::float_type;
+  using vector_type = typename U::vector_type;
+
+ private:
+  // Orthonormal vectors spanning the subspace, expressed in Universe coordinates.
+  std::array<vector_type, N> orthonormal_basis_;
+
+ public:
+  SubSpace(vector_type const& normal) requires (N == 1) : orthonormal_basis_{normal}
+  {
+    if (!orthonormal_basis_[0].normalize())
+      THROW_LALERT("Failed to normalize vector [VECTOR]", AIArgs("[VECTOR]", normal));
+  }
 
 #if CWDEBUG
-template<math::ConceptUniverse U, size_t N>
-void math::Basis<U, N>::print_on(std::ostream& os) const
+ public:
+  void print_on(std::ostream& os) const;
+#endif
+};
+
+namespace detail {
+
+template<ConceptUniverse U, int N>
+class BasisBuilder
+{
+ public:
+  static constexpr int n = N;
+  static constexpr int max_n = U::max_n;
+  using float_type  = typename U::float_type;
+  using vector_type = typename U::vector_type;
+  using axes_type   = typename U::axes_type;
+  using orthogonal_subspace_type = SubSpace<U, max_n - n>;
+
+ private:
+  // The universe subspace orthogonal to the basis.
+  orthogonal_subspace_type orthogonal_subspace_;
+
+  // Orthonormal vectors spanning the processed subspace, expressed in Universe coordinates.
+  std::array<vector_type, n> processed_subspace_;
+  size_t processed_subspace_size_{0};            // The number of valid vectors in processed_subspace_ so far.
+
+  // Universe standard axes that have already been “claimed” as closest to some processed_subspace_ vector.
+  axes_type processed_axes_{0};
+
+ public:
+  BasisBuilder(orthogonal_subspace_type orthogonal_subspace) : orthogonal_subspace_(orthogonal_subspace) { }
+
+#if CWDEBUG
+ public:
+  void print_on(std::ostream& os) const;
+#endif
+};
+
+} // namespace detail
+
+template<ConceptUniverse U, size_t N>
+Basis<U, N>::Basis(detail::BasisBuilder<U, N> builder)
+{
+  DoutEntering(dc::notice, "Basis<" << libcwd::type_info_of<U>().demangled_name() << ", " << N << ">::Basis(" << builder << ")");
+}
+
+#if CWDEBUG
+template<ConceptUniverse U, size_t N>
+void Basis<U, N>::print_on(std::ostream& os) const
 {
   os << "{scale_factor:" << scale_factor_ << ", rotation_matrix:\n" << rotation_matrix_ << '}';
 }
 
 template<size_t N>
-void math::Permutation<N>::print_on(std::ostream& os) const
+void Permutation<N>::print_on(std::ostream& os) const
 {
   os << '(';
   char const* separator = "";
@@ -401,4 +475,20 @@ void math::Permutation<N>::print_on(std::ostream& os) const
   }
   os << ')';
 }
+
+template<ConceptUniverse U, int N>
+void SubSpace<U, N>::print_on(std::ostream& os) const
+{
+  os << "{orthonormal_basis:" << utils::print_range(orthonormal_basis_.begin(), orthonormal_basis_.end()) << "}";
+}
+
+template<ConceptUniverse U, int N>
+void detail::BasisBuilder<U, N>::print_on(std::ostream& os) const
+{
+  os << "{orthogonal_subspace_:" << orthogonal_subspace_ <<
+    ", processed_subspace:" << utils::print_range(processed_subspace_.begin(), processed_subspace_.begin() + processed_subspace_size_) <<
+    ", processed_subspace_size:" << processed_subspace_size_ << ", processed_axes:" << processed_axes_ << "}";
+}
 #endif
+
+} // namespace math
