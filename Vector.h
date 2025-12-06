@@ -45,6 +45,14 @@ class Vector
   // Construct an uninitialized Vector.
   Vector() = default;
 
+  // Construct a standard basis vector e_i.
+  Vector(int i)
+  {
+    ASSERT(0 <= i && i < N);
+    v_.setZero();
+    v_[i] = T{1};
+  }
+
   // Construct a vector from its x,y,... coordinates.
   template<typename... U>
     requires (sizeof...(U) == N &&                                              // Exactly N coefficients.

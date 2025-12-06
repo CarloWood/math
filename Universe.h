@@ -310,7 +310,6 @@ Universe<ID, MAX_N, T>::CoordinateSubspace::from_permutation(Permutation<N> perm
 
 // End of Universe
 //=============================================================================
-
 template<ConceptUniverse U, size_t N>
 void Basis<U, N>::rotate_from_to(vector_type v1, vector_type v2)
 {
@@ -394,8 +393,6 @@ class SubSpace
 {
  public:
   static constexpr int n = N;
-  static constexpr int max_n = U::max_n;
-  using float_type  = typename U::float_type;
   using vector_type = typename U::vector_type;
 
  private:
@@ -407,6 +404,13 @@ class SubSpace
   {
     if (!orthonormal_basis_[0].normalize())
       THROW_LALERT("Failed to normalize vector [VECTOR]", AIArgs("[VECTOR]", normal));
+  }
+
+  // Accessor for the i-th orthonormal basis vector (0 <= i < N).
+  vector_type const& basis_vector(int i) const
+  {
+    ASSERT(i >= 0 && i < N);
+    return orthonormal_basis_[i];
   }
 
 #if CWDEBUG
@@ -421,11 +425,13 @@ template<ConceptUniverse U, int N>
 class BasisBuilder
 {
  public:
-  static constexpr int n = N;
+  static constexpr int n     = N;
   static constexpr int max_n = U::max_n;
-  using float_type  = typename U::float_type;
-  using vector_type = typename U::vector_type;
-  using axes_type   = typename U::axes_type;
+  using float_type           = typename U::float_type;
+  using vector_type          = typename U::vector_type;
+  using rotation_matrix_type = typename U::rotation_matrix_type;
+  using axes_type            = typename U::axes_type;
+  using Index                = typename axes_type::Index;
   using orthogonal_subspace_type = SubSpace<U, max_n - n>;
 
  private:
@@ -442,19 +448,132 @@ class BasisBuilder
  public:
   BasisBuilder(orthogonal_subspace_type orthogonal_subspace) : orthogonal_subspace_(orthogonal_subspace) { }
 
+  rotation_matrix_type build_rotation_matrix();
+
+ private:
+  // Project v onto the complement of the orthogonal subspace and the already selected basis vectors.
+  vector_type project_onto_complement(vector_type v) const
+  {
+    // Remove components along the orthogonal subspace (orthonormal).
+    for (int j = 0; j < orthogonal_subspace_type::n; ++j)
+    {
+      auto const& w = orthogonal_subspace_.basis_vector(j);
+      float_type const dot = v.dot(w);
+      v -= dot * w;
+    }
+
+    // Remove components along already constructed basis vectors.
+    for (size_t i = 0; i < processed_subspace_size_; ++i)
+    {
+      auto const& u = processed_subspace_[i];
+      float_type const dot = v.dot(u);
+      v -= dot * u;
+    }
+
+    return v;
+  }
+
+  // Add the Universe standard axis whose projection onto the complement is longest.
+  // Returns true on success; false if no suitable axis was found.
+  bool add_best_axis()
+  {
+    using namespace utils::bitset;
+    constexpr IndexPOD index_end = { max_n };
+
+    float_type  best_norm_squared = 0;
+    Index       best_axis;
+    vector_type best_vector;
+
+    for (Index axis = index_begin; axis != index_end; ++axis)
+    {
+      if (processed_axes_.test(axis))
+        continue;
+
+      vector_type e_axis(axis());
+      vector_type projected = project_onto_complement(e_axis);
+      float_type const norm_squared = projected.norm_squared();
+
+      if (norm_squared > best_norm_squared)
+      {
+        best_norm_squared = norm_squared;
+        best_axis         = axis;
+        best_vector       = projected;
+      }
+    }
+
+    // Did any remaining axis have a non-zero projection?
+    if (best_norm_squared == 0)
+      return false;
+
+    float_type const len = std::sqrt(best_norm_squared);
+    ASSERT(len > 0);
+    best_vector /= len;
+
+    ASSERT(processed_subspace_size_ < n);
+    processed_subspace_[processed_subspace_size_] = best_vector;
+    ++processed_subspace_size_;
+
+    processed_axes_.set(best_axis);
+    return true;
+  }
+
 #if CWDEBUG
  public:
   void print_on(std::ostream& os) const;
 #endif
 };
 
+template<ConceptUniverse U, int N>
+BasisBuilder<U, N>::rotation_matrix_type BasisBuilder<U, N>::build_rotation_matrix()
+{
+  // Iteratively construct N orthonormal basis vectors for the complement of
+  // the orthogonal subspace by selecting the Universe standard axis whose
+  // projection onto that complement is longest.
+  for (int basis_row = 0; basis_row < n; ++basis_row)
+  {
+    if (!add_best_axis())
+      THROW_LALERT("Failed to construct basis vector [INDEX].", AIArgs("[INDEX]", basis_row));
+  }
+  ASSERT(processed_subspace_size_ == n);
+
+  // Fill rotation_matrix with the constructed basis vectors and the orthogonal subspace basis.
+  rotation_matrix_type rotation_matrix;
+
+  // First N rows: basis axes in Universe coordinates.
+  for (int row = 0; row < n; ++row)
+  {
+    vector_type const& u = processed_subspace_[row];
+    for (int col = 0; col < max_n; ++col)
+      rotation_matrix(row, col) = u[col];
+  }
+
+  // Remaining rows: orthogonal subspace basis vectors.
+  for (int row = n; row < max_n; ++row)
+  {
+    vector_type const& w = orthogonal_subspace_.basis_vector(row - n);
+    for (int col = 0; col < max_n; ++col)
+      rotation_matrix(row, col) = w[col];
+  }
+
+  return rotation_matrix;
+}
+
 } // namespace detail
 
+// Construct a Basis from a BasisBuilder.
+//
+// The BasisBuilder describes the subspace orthogonal to the Basis (its normal
+// subspace) and keeps track of Universe axes that were already used to define
+// basis directions. Here we construct an orthonormal basis of the complement
+// of that orthogonal subspace by selecting Universe standard axes whose
+// projections onto that complement are as long as possible.
+//
+// The resulting rotation_matrix_ converts Universe coordinates to coordinates
+// in this Basis: the first N rows are the N basis axes in Universe
+// coordinates, and the remaining rows are an orthonormal completion given by
+// the orthogonal subspace.
 template<ConceptUniverse U, size_t N>
-Basis<U, N>::Basis(detail::BasisBuilder<U, N> builder)
-{
-  DoutEntering(dc::notice, "Basis<" << libcwd::type_info_of<U>().demangled_name() << ", " << N << ">::Basis(" << builder << ")");
-}
+Basis<U, N>::Basis(detail::BasisBuilder<U, N> builder) : scale_factor_{1}, rotation_matrix_{builder.build_rotation_matrix()} { }
 
 #if CWDEBUG
 template<ConceptUniverse U, size_t N>
@@ -485,9 +604,10 @@ void SubSpace<U, N>::print_on(std::ostream& os) const
 template<ConceptUniverse U, int N>
 void detail::BasisBuilder<U, N>::print_on(std::ostream& os) const
 {
+  std::string const processed_axes = processed_axes_.to_string();
   os << "{orthogonal_subspace_:" << orthogonal_subspace_ <<
     ", processed_subspace:" << utils::print_range(processed_subspace_.begin(), processed_subspace_.begin() + processed_subspace_size_) <<
-    ", processed_subspace_size:" << processed_subspace_size_ << ", processed_axes:" << processed_axes_ << "}";
+    ", processed_subspace_size:" << processed_subspace_size_ << ", processed_axes:" << processed_axes.substr(processed_axes.length() - N) << "}";
 }
 #endif
 
