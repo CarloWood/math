@@ -104,7 +104,7 @@ class Hyperplane
 
  public:
   // Create a hyperplane that satisfies N·X + b = 0, where b = -N·P for some P on the plane.
-  Hyperplane(vector_type const& normal, T b) : normal_(normal), b_(b) { }
+  Hyperplane(vector_type const& normal, typename vector_type::scalar_type b) : normal_(normal), b_(b) { }
 
   // Accessors.
   vector_type const& normal() const { return normal_; }
