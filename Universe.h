@@ -406,6 +406,14 @@ class SubSpace
       THROW_LALERT("Failed to normalize vector [VECTOR]", AIArgs("[VECTOR]", normal));
   }
 
+  SubSpace(vector_type const& normal0, vector_type const& normal1) requires (N == 2) : orthonormal_basis_{normal0, normal1}
+  {
+    if (!orthonormal_basis_[0].normalize())
+      THROW_LALERT("Failed to normalize vector [VECTOR]", AIArgs("[VECTOR]", normal0));
+    if (!orthonormal_basis_[1].normalize())
+      THROW_LALERT("Failed to normalize vector [VECTOR]", AIArgs("[VECTOR]", normal1));
+  }
+
   // Accessor for the i-th orthonormal basis vector (0 <= i < N).
   vector_type const& basis_vector(int i) const
   {
