@@ -183,7 +183,7 @@ class Vector
     v_ = -v_;
   }
 
-  // Return the inverse.
+  // Return the negated vector.
   Vector operator-() const
   {
     return {-v_};
