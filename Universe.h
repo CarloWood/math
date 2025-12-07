@@ -1,6 +1,6 @@
 #pragma once
 
-#include "math/Vector.h"
+#include "math/Matrix.h"
 #include "utils/uint_leastN_t.h"
 #include "utils/BitSet.h"
 #include "utils/macros.h"
@@ -112,7 +112,8 @@ class Basis
   // For example, in a 5D universe containing a 3D subspace that is spanned by
   // the (5D) orthogonal unit vectors x̂, ŷ and ẑ (in universe coordinates),
   // rotation_matrix_ would be:
-  //
+  //                                   max_n wide
+  //                            ╭─────────────────────╮
   //                          ⎛ <⋯ row unit vector x̂ ⋯> ⎞       ⎫
   //                          ⎜ <⋯ row unit vector ŷ ⋯> ⎟       ⎬ The first N rows are the N basis axes expressed as unit vectors in Universe coordinates.
   //   rotation_matrix_ (R) = ⎜ <⋯ row unit vector ẑ ⋯> ⎟       ⎭
@@ -134,6 +135,17 @@ class Basis
   // spanned by v1 and v2. The orthogonal complement is left invariant.
   // If v1·v2 < 0 then v2 is first negated so that the rotation angle is at most 90 degrees.
   void rotate_from_to(vector_type v1, vector_type v2);
+
+  // Return the first n rows of rotation_matrix_.
+  //
+  // This can be used to convert a math::Vector<n> in basis coordinates (v_bc) to the corresponding vector in universe coordinates (v_uc):
+  //
+  // auto bc_to_uc = basis.to_universe_coordinates();
+  // auto v_uc = v_bc * bc_to_uc;
+  //
+  math::Matrix<n, max_n> to_universe_coordinates() const { return {scale_factor_ * rotation_matrix_.template topRows<n>()}; }
+
+  math::Matrix<max_n, n> to_basis_coordinates() const { return {((float_type{1} / scale_factor_) * rotation_matrix_.inverse()).template leftCols<n>()}; }
 
  private:
   friend U;
