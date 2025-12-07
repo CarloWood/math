@@ -152,7 +152,14 @@ bool operator!=(Point<N, T> const& p1, Point<N, T> const& p2)
 template<int N, typename T>
 void Point<N, T>::print_on(std::ostream& os) const
 {
-  os << "{p_:" << p_ << '}';
+  os << "{p_:(";
+  char const* separator = "";
+  for (int i = 0; i < N; ++i)
+  {
+    os << separator << p_(i);
+    separator = ", ";
+  }
+  os << ")}";
 }
 #endif
 
