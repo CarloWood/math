@@ -128,7 +128,7 @@ class Basis
 
   Basis(float_type scale_factor) : scale_factor_(scale_factor), rotation_matrix_(rotation_matrix_type::Identity()) { }
 
-  Basis(detail::BasisBuilder<U, N> builder);
+  Basis(detail::BasisBuilder<U, N> builder, float_type scale_factor = 1);
 
   // Apply the unique proper rotation that maps v1 to v2 by a rotation in the plane
   // spanned by v1 and v2. The orthogonal complement is left invariant.
@@ -581,7 +581,7 @@ BasisBuilder<U, N>::rotation_matrix_type BasisBuilder<U, N>::build_rotation_matr
 // coordinates, and the remaining rows are an orthonormal completion given by
 // the orthogonal subspace.
 template<ConceptUniverse U, size_t N>
-Basis<U, N>::Basis(detail::BasisBuilder<U, N> builder) : scale_factor_{1}, rotation_matrix_{builder.build_rotation_matrix()} { }
+Basis<U, N>::Basis(detail::BasisBuilder<U, N> builder, float_type scale_factor) : scale_factor_{scale_factor}, rotation_matrix_{builder.build_rotation_matrix()} { }
 
 #if CWDEBUG
 template<ConceptUniverse U, size_t N>
