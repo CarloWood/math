@@ -50,6 +50,10 @@ concept ConceptUniverse = detail::is_universe_v<std::remove_cvref_t<U>>;
 // End of ConceptUniverse
 //-----------------------------------------------------------------------------
 
+// Forward declare SubSpace.
+template<ConceptUniverse U, int N>
+class SubSpace;
+
 //=============================================================================
 // Basis
 //
@@ -129,7 +133,9 @@ class Basis
 
   Basis(float_type scale_factor) : scale_factor_(scale_factor), rotation_matrix_(rotation_matrix_type::Identity()) { }
 
-  Basis(detail::BasisBuilder<U, N> builder, float_type scale_factor = 1);
+//  Basis(detail::BasisBuilder<U, N> builder, float_type scale_factor = 1);
+
+  Basis(SubSpace<U, max_n - n> const& normal_subspace, float_type scale_factor = 1);
 
   // Apply the unique proper rotation that maps v1 to v2 by a rotation in the plane
   // spanned by v1 and v2. The orthogonal complement is left invariant.
@@ -325,7 +331,7 @@ Universe<ID, MAX_N, T>::CoordinateSubspace::from_permutation(Permutation<N> perm
 template<ConceptUniverse U, size_t N>
 void Basis<U, N>::rotate_from_to(vector_type v1, vector_type v2)
 {
-  DoutEntering(dc::notice, "Basis<" << libcwd::type_info_of<U>().demangled_name() << ", " << N << ">::rotate_from_to(" << v1 << ", " << v2 << ")");
+  //DoutEntering(dc::notice, "Basis<" << libcwd::type_info_of<U>().demangled_name() << ", " << N << ">::rotate_from_to(" << v1 << ", " << v2 << ")");
 
   constexpr float_type zero = 0;
   constexpr float_type one  = 1;
@@ -452,11 +458,11 @@ class BasisBuilder
   using rotation_matrix_type = typename U::rotation_matrix_type;
   using axes_type            = typename U::axes_type;
   using Index                = typename axes_type::Index;
-  using orthogonal_subspace_type = SubSpace<U, max_n - n>;
+  using normal_subspace_type = SubSpace<U, max_n - n>;
 
  private:
   // The universe subspace orthogonal to the basis.
-  orthogonal_subspace_type orthogonal_subspace_;
+  normal_subspace_type normal_subspace_;
 
   // Orthonormal vectors spanning the processed subspace, expressed in Universe coordinates.
   std::array<vector_type, n> processed_subspace_;
@@ -466,7 +472,7 @@ class BasisBuilder
   axes_type processed_axes_{0};
 
  public:
-  BasisBuilder(orthogonal_subspace_type orthogonal_subspace) : orthogonal_subspace_(orthogonal_subspace) { }
+  BasisBuilder(normal_subspace_type normal_subspace) : normal_subspace_(normal_subspace) { }
 
   rotation_matrix_type build_rotation_matrix();
 
@@ -475,9 +481,9 @@ class BasisBuilder
   vector_type project_onto_complement(vector_type v) const
   {
     // Remove components along the orthogonal subspace (orthonormal).
-    for (int j = 0; j < orthogonal_subspace_type::n; ++j)
+    for (int j = 0; j < normal_subspace_type::n; ++j)
     {
-      auto const& w = orthogonal_subspace_.basis_vector(j);
+      auto const& w = normal_subspace_.basis_vector(j);
       float_type const dot = v.dot(w);
       v -= dot * w;
     }
@@ -570,7 +576,7 @@ BasisBuilder<U, N>::rotation_matrix_type BasisBuilder<U, N>::build_rotation_matr
   // Remaining rows: orthogonal subspace basis vectors.
   for (int row = n; row < max_n; ++row)
   {
-    vector_type const& w = orthogonal_subspace_.basis_vector(row - n);
+    vector_type const& w = normal_subspace_.basis_vector(row - n);
     for (int col = 0; col < max_n; ++col)
       rotation_matrix(row, col) = w[col];
   }
@@ -579,6 +585,32 @@ BasisBuilder<U, N>::rotation_matrix_type BasisBuilder<U, N>::build_rotation_matr
 }
 
 } // namespace detail
+
+// Construct a Basis from a SubSpace.
+//
+// The SubSpace describes the normal subspace of the Basis.
+// Here we construct an orthonormal basis of the complement of the normal_subspace
+// by rotating its normal_subspace_type::n basis vectors to the highest axes
+// of the Universe.
+//
+// The resulting rotation_matrix_ defines the Basis: the first N rows are the
+// N basis axes in Universe coordinates. The remaining rows are an orthonormal
+// completion given by the normal subspace.
+//
+// Note that the orientation of the axes in the subspace spanned by this Basis
+// is more or less arbitrary.
+template<ConceptUniverse U, size_t N>
+Basis<U, N>::Basis(SubSpace<U, max_n - n> const& normal_subspace, float_type scale_factor) : scale_factor_{scale_factor}, rotation_matrix_{rotation_matrix_type::Identity()}
+{
+  // Run over all axes of the normal_subspace.
+  for (int j = 0; j < max_n - n; ++j)
+  {
+    // We start with the highest standard basis vector.
+    int i = max_n - 1 - j;
+    vector_type const& basis_vector = normal_subspace.basis_vector(i - n);
+    rotate_from_to(basis_vector, U::standard_basis.e(i));
+  }
+}
 
 // Construct a Basis from a BasisBuilder.
 //
@@ -592,8 +624,8 @@ BasisBuilder<U, N>::rotation_matrix_type BasisBuilder<U, N>::build_rotation_matr
 // in this Basis: the first N rows are the N basis axes in Universe
 // coordinates, and the remaining rows are an orthonormal completion given by
 // the orthogonal subspace.
-template<ConceptUniverse U, size_t N>
-Basis<U, N>::Basis(detail::BasisBuilder<U, N> builder, float_type scale_factor) : scale_factor_{scale_factor}, rotation_matrix_{builder.build_rotation_matrix()} { }
+//template<ConceptUniverse U, size_t N>
+//Basis<U, N>::Basis(detail::BasisBuilder<U, N> builder, float_type scale_factor) : scale_factor_{scale_factor}, rotation_matrix_{builder.build_rotation_matrix()} { }
 
 #if CWDEBUG
 template<ConceptUniverse U, size_t N>
@@ -625,7 +657,7 @@ template<ConceptUniverse U, int N>
 void detail::BasisBuilder<U, N>::print_on(std::ostream& os) const
 {
   std::string const processed_axes = processed_axes_.to_string();
-  os << "{orthogonal_subspace_:" << orthogonal_subspace_ <<
+  os << "{normal_subspace_:" << normal_subspace_ <<
     ", processed_subspace:" << utils::print_range(processed_subspace_.begin(), processed_subspace_.begin() + processed_subspace_size_) <<
     ", processed_subspace_size:" << processed_subspace_size_ << ", processed_axes:" << processed_axes.substr(processed_axes.length() - N) << "}";
 }
