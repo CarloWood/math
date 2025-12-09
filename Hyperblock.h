@@ -142,8 +142,11 @@ template<int n , std::floating_point T = double>
 class Hyperblock
 {
  public:
-  using vector_type = math::Vector<n, T>;
   static constexpr int number_of_corners = 1 << n;
+  using vector_type = math::Vector<n, T>;
+  enum IntersectionPointCategory { };
+  using IntersectionPointIndex = utils::VectorIndex<IntersectionPointCategory>;
+  using IntersectionPoints = utils::Vector<vector_type, IntersectionPointIndex>;
 
  private:
   utils::Vector<vector_type, CornerIndex> C_;          // The 2^n corners of the hyperblock.
@@ -177,7 +180,7 @@ class Hyperblock
   CornerIndex ibegin() const { return C_.ibegin(); }
   CornerIndex iend() const { return C_.iend(); }
 
-  std::vector<vector_type> intersection_points(Hyperplane<n, T> const& plane) const;
+  IntersectionPoints intersection_points(Hyperplane<n, T> const& plane) const;
 
 #ifdef CWDEBUG
   void print_on(std::ostream& os) const
@@ -225,7 +228,7 @@ class Hyperblock
     Edge const& current_edge,
     std::map<detail::EdgeId, Edge> const& edges,
     std::map<detail::FaceId, detail::FaceSegment> const& face_segments,
-    std::vector<vector_type>& intersections) const;
+    IntersectionPoints& intersection_points) const;
 };
 
 template<int n , std::floating_point T>
@@ -244,9 +247,9 @@ void Hyperblock<n, T>::Edge::store(bool entry_point, detail::FaceId const& face_
 }
 
 template<int n, std::floating_point T>
-std::vector<typename Hyperblock<n, T>::vector_type> Hyperblock<n, T>::intersection_points(Hyperplane<n, T> const& plane) const
+typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_points(Hyperplane<n, T> const& plane) const
 {
-  std::vector<vector_type> intersections;
+  IntersectionPoints intersection_points;
 
   utils::Vector<Sign, CornerIndex> side(number_of_corners);
   for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
@@ -435,10 +438,10 @@ std::vector<typename Hyperblock<n, T>::vector_type> Hyperblock<n, T>::intersecti
     Edge const& first_edge{first_edge_iter->second};
 
     // Run over all edges from here, following face segments for which we are the entry point in a breath-first manner and store the intersection point of each edge.
-    breadth_first_search(first_edge, edges, face_segments, intersections);
+    breadth_first_search(first_edge, edges, face_segments, intersection_points);
   }
 
-  return intersections;
+  return intersection_points;
 }
 
 template<int n, std::floating_point T>
@@ -446,7 +449,7 @@ void Hyperblock<n, T>::breadth_first_search(
     Edge const& current_edge,
     std::map<detail::EdgeId, Edge> const& edges,
     std::map<detail::FaceId, detail::FaceSegment> const& face_segments,
-    std::vector<vector_type>& intersections) const
+    IntersectionPoints& intersection_points) const
 {
   using namespace detail;
 
@@ -461,7 +464,7 @@ void Hyperblock<n, T>::breadth_first_search(
     if (edge->is_visited())
       continue;
 
-    intersections.emplace_back(edge->intersection_point_);
+    intersection_points.emplace_back(edge->intersection_point_);
     edge->visited();
 
     // Enqueue all exit edges reachable from faces for which this edge is an entry point.
