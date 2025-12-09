@@ -177,7 +177,7 @@ class Hyperblock
   CornerIndex ibegin() const { return C_.ibegin(); }
   CornerIndex iend() const { return C_.iend(); }
 
-  std::vector<vector_type> intersection_points(Hyperplane<n, T> const& plane);
+  std::vector<vector_type> intersection_points(Hyperplane<n, T> const& plane) const;
 
 #ifdef CWDEBUG
   void print_on(std::ostream& os) const
@@ -225,7 +225,7 @@ class Hyperblock
     Edge const& current_edge,
     std::map<detail::EdgeId, Edge> const& edges,
     std::map<detail::FaceId, detail::FaceSegment> const& face_segments,
-    std::vector<vector_type>& intersections);
+    std::vector<vector_type>& intersections) const;
 };
 
 template<int n , std::floating_point T>
@@ -244,7 +244,7 @@ void Hyperblock<n, T>::Edge::store(bool entry_point, detail::FaceId const& face_
 }
 
 template<int n, std::floating_point T>
-std::vector<typename Hyperblock<n, T>::vector_type> Hyperblock<n, T>::intersection_points(Hyperplane<n, T> const& plane)
+std::vector<typename Hyperblock<n, T>::vector_type> Hyperblock<n, T>::intersection_points(Hyperplane<n, T> const& plane) const
 {
   std::vector<vector_type> intersections;
 
@@ -446,7 +446,7 @@ void Hyperblock<n, T>::breadth_first_search(
     Edge const& current_edge,
     std::map<detail::EdgeId, Edge> const& edges,
     std::map<detail::FaceId, detail::FaceSegment> const& face_segments,
-    std::vector<vector_type>& intersections)
+    std::vector<vector_type>& intersections) const
 {
   using namespace detail;
 
