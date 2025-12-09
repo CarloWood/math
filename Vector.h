@@ -45,12 +45,13 @@ class Vector
   // Construct an uninitialized Vector.
   Vector() = default;
 
-  // Construct a standard basis vector e_i.
+  // Construct a standard basis vector e_i, or zero if i == -1.
   Vector(int i)
   {
-    ASSERT(0 <= i && i < N);
+    ASSERT(-1 <= i && i < N);
     v_.setZero();
-    v_[i] = T{1};
+    if (i != -1)
+      v_[i] = T{1};
   }
 
   // Construct a vector from its x,y,... coordinates.
