@@ -288,26 +288,37 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
   // and the corner D also adjacent to A but on the 'positive' side of the plane.
   // Likewise for E and F:
   //
-  //                  A               B
-  //                   0---------------0
-  //                  / \             / \
-  //                 /   \           /   \
-  //                /     \         /     \
-  //               /       \       /       \
-  //              -         +     -         +
-  //             C           D   E           F
+  //               D               F
+  //                +               +        n
+  //                 \               \       ^
+  //                  \      edge     \      │
+  //          ⋯⋯⋯⋯⋯⋯⋯A⋯0───────────────0⋯B⋯⋯⋯⋯⋯⋯ (the plane)
+  //                  /               /
+  //                 /               /
+  //                -               -
+  //               C               E
   //
   // Then either A or B is encountered first. Lets say A.
   // In that case we count an equal number of adjacent corners to be on the
   // positive side as on the negative side (one each), in which the tie-breaker
-  // is used to put A on the positive side.
+  // is used to put A on the positive side (the plane is assumed to cut AC, not AD).
   //
   // Next B is encountered which now sees one adjacent corner (E) to be
   // on the negative side and two (A and F) to be on the positive side.
   // Therefore B is also put on the positive side.
   //
   // This is consistent with moving the whole plane an infinitesimal bit
-  // in the direction opposite to its normal.
+  // in the direction opposite to its normal:
+  //
+  //               D               F
+  //                +               +
+  //                 \               \       n
+  //                  \      edge     \      ^
+  //                 A +───────────────+ B   │
+  //          ⋯⋯⋯⋯⋯⋯⋯⋯/⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯/⋯⋯⋯⋯⋯⋯⋯⋯⋯ (the plane, assumed to cut AC and BE).
+  //                 /               /
+  //                -               -
+  //               C               E
   //
   for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
   {
@@ -326,7 +337,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
         ++neg;
     }
 
-    // Any side will do, but this is a good choice.
+    // Any side (above or below the plane) will do, but this is a good choice.
     side[ci] = (pos >= neg) ? positive : negative;
   }
 
@@ -409,7 +420,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
         // Get the (sign of the) component of the normal of the hyper plane along the edge direction.
         int const n_e = plane.normal()[e] < 0.0 ? -1 : 1;
         // Now we can calculate the (sign of the) dot product between the hyperplane normal and the directional vector that goes clockwise around the 2-face.
-        // If this sign is positive then this is the entry point of this 2-face.
+        // If this sign is positive then this is the entry point (S) of this 2-face, otherwise it is the exit point (E).
         bool is_entry_point = edge_direction * n_e > 0;
 
         // Example:                             end (defining the direction of the line segment SE)
@@ -427,13 +438,13 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
         //                          start                          ^
         //                                                          \ bit_f
         //
-        // The point F has corners ci_e0 (0,0) and ci_e1 (1,0), e=0 (the first coordinate).
+        // The point S has corners ci_e0 (0,0) and ci_e1 (1,0), e=0 (the first coordinate).
         // The 2-face is spanned by e=0 and f=1 (the second (and only other) coordinate).
         // bit_f = 0
         // ci_e0.get_value() = b00, n=2, f-e=1 --> order_A = true: going clockwise we encounter in order: (0,0) --> (0,1) --> (1,1) --> (1,0) --> (0,0)
         // Thus edge_direction=-1 (going from x=1 to x=0).
         // The component of the normal along e also -1 (N points "to the left").
-        // Therefore is_entry_point=true : F is the point where the line enters the rectangle.
+        // Therefore is_entry_point=true : S is the point where the line enters the rectangle.
 
         // Construct a unique ID for the current 2-face.
         FaceId<n, T> const face_id(ci_e0, e, f);
