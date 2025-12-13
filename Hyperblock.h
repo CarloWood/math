@@ -26,46 +26,6 @@ inline size_t to_mask(int dim)
 }
 
 template<int n>
-class EdgeId
-{
- private:
-  CornerIndex<n> lo_;   // The lower-valued corner index of the edge (lexicographic first endpoint).
-  CornerIndex<n> hi_;   // The higher-valued corner index of the edge (lexicographic second endpoint).
-
- public:
-  EdgeId() = default;   // Construct an EdgeId with undefined corner indexes.
-
-  EdgeId(CornerIndex<n> ci0, CornerIndex<n> ci1) :
-    lo_(std::min(ci0, ci1)),
-    hi_(std::max(ci0, ci1))
-  {
-    ASSERT(!lo_.undefined() && !hi_.undefined());
-  }
-
-  // Order EdgeId's by lo_ first.
-  friend bool operator<(EdgeId const& lhs, EdgeId const& rhs)
-  {
-    // Don't call operator< on undefined EdgeId's.
-    ASSERT(!lhs.undefined() && !rhs.undefined());
-    if (lhs.lo_ != rhs.lo_)
-      return lhs.lo_ < rhs.lo_;
-    return lhs.hi_ < rhs.hi_;
-  }
-
-  bool undefined() const
-  {
-    return lo_.undefined();
-  }
-
-#ifdef CWDEBUG
-  void print_on(std::ostream& os) const
-  {
-    os << "{lo:" << lo_ << ", hi:" << hi_ << "}";
-  }
-#endif
-};
-
-template<int n>
 class FaceId
 {
  private:
@@ -104,13 +64,13 @@ template<int n>
 class FaceSegment
 {
  private:
-  EdgeId<n> entry_point_;
-  EdgeId<n> exit_point_;
+  EdgeIndex<n> entry_point_;
+  EdgeIndex<n> exit_point_;
 
  public:
   FaceSegment() = default;
 
-  void add(EdgeId<n> edge_id, bool entry_point)
+  void add(EdgeIndex<n> edge_id, bool entry_point)
   {
     if (entry_point)
       entry_point_ = edge_id;
@@ -119,14 +79,14 @@ class FaceSegment
   }
 
   // Accessor.
-  EdgeId<n> entry_point() const
+  EdgeIndex<n> entry_point() const
   {
     // Call add for the entry point.
     ASSERT(!entry_point_.undefined());
     return entry_point_;
   }
 
-  EdgeId<n> exit_point() const
+  EdgeIndex<n> exit_point() const
   {
     // Call add for the exit point.
     ASSERT(!exit_point_.undefined());
@@ -226,7 +186,7 @@ class Hyperblock
 
   void breadth_first_search(
     Edge const& current_edge,
-    std::map<detail::EdgeId<n>, Edge> const& edges,
+    std::map<EdgeIndex<n>, Edge> const& edges,
     std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const;
 };
@@ -320,8 +280,8 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
     side[ci] = (pos >= neg) ? positive : negative;
   }
 
-  // A map from EdgeId to Edge data.
-  std::map<EdgeId<n>, Edge> edges;
+  // A map from EdgeIndex to Edge data.
+  std::map<EdgeIndex<n>, Edge> edges;
   // A map from FaceId to the two intersected edges of that 2-face.
   std::map<FaceId<n>, FaceSegment<n>> face_segments;
 
@@ -347,7 +307,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
       // Found two corners on opposite sides of the hyperplane.
 
       // Construct a unique ID for the current edge between the two corners.
-      EdgeId<n> const edge_id(ci_e0, ci_e1);
+      EdgeIndex<n> const edge_id(ci_e0, ci_e1);
       Edge& current_edge = edges[edge_id];
       // Calculate the intersection point on this edge and store it in edges.
       current_edge.add_intersection_point(plane.intersection(C_[ci_e0], C_[ci_e1]));
@@ -439,7 +399,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
   // Does the hyper plane intersect with any edge at all?
   if (!edges.empty())
   {
-    // Begin with the lexiographically smallest EdgeId that is an entry point for at least one face.
+    // Begin with the lexiographically smallest EdgeIndex that is an entry point for at least one face.
     auto first_edge_iter = edges.begin();
     while (!first_edge_iter->second.is_entry_point())
     {
@@ -458,7 +418,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
 template<int n, std::floating_point T>
 void Hyperblock<n, T>::breadth_first_search(
     Edge const& current_edge,
-    std::map<detail::EdgeId<n>, Edge> const& edges,
+    std::map<EdgeIndex<n>, Edge> const& edges,
     std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const
 {
@@ -483,7 +443,7 @@ void Hyperblock<n, T>::breadth_first_search(
     {
       FaceId<n> const entry_face_id = *entry_face_iter;
       auto face_segment = face_segments.find(entry_face_id);
-      EdgeId<n> const exit_point = face_segment->second.exit_point();
+      EdgeIndex<n> const exit_point = face_segment->second.exit_point();
       auto exit_edge = edges.find(exit_point);
       ASSERT(exit_edge != edges.end());
       if (!exit_edge->second.is_visited())
