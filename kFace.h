@@ -81,8 +81,8 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
   // Construct a corner.
   constexpr kFaceIndex(size_t value) requires (k == 0) : utils::VectorIndex<kFaceData<n, k>>(value)
   {
-    // All unused bits must be zero.
-    ASSERT((value & corner_mask) == value);
+    // All unused bits must be zero, except if value is possibly `end` by being one larger than the maximum allowed index.
+    ASSERT((value & corner_mask) == value || value == size_t{1} << n);
   }
 
   // Construct a kFaceIndex from some given kFace.

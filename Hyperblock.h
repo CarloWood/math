@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math/Hyperplane.h"
+#include "math/kFace.h"
 #include "utils/Vector.h"
 #include <concepts>
 #include <vector>
@@ -12,20 +13,6 @@
 #include "debug.h"
 
 namespace math {
-
-template<int n , std::floating_point T>
-struct HyperblockIndexCategory
-{
-  struct Corner;
-  struct Edge;
-  struct Face;
-  struct IntersectionPoint;
-
-  using CornerIndex = utils::VectorIndex<Corner>;
-  using EdgeIndex = utils::VectorIndex<Edge>;
-  using FaceIndex = utils::VectorIndex<Face>;
-  using IntersectionPointIndex = utils::VectorIndex<IntersectionPoint>;
-};
 
 namespace detail {
 #ifdef CWDEBUG
@@ -41,17 +28,14 @@ inline size_t to_mask(int dim)
 template<int n , std::floating_point T>
 class EdgeId
 {
- public:
-  using CornerIndex = typename HyperblockIndexCategory<n, T>::CornerIndex;
-
  private:
-  CornerIndex lo_;      // The lower-valued corner index of the edge (lexicographic first endpoint).
-  CornerIndex hi_;      // The higher-valued corner index of the edge (lexicographic second endpoint).
+  CornerIndex<n> lo_;   // The lower-valued corner index of the edge (lexicographic first endpoint).
+  CornerIndex<n> hi_;   // The higher-valued corner index of the edge (lexicographic second endpoint).
 
  public:
   EdgeId() = default;   // Construct an EdgeId with undefined corner indexes.
 
-  EdgeId(CornerIndex ci0, CornerIndex ci1) :
+  EdgeId(CornerIndex<n> ci0, CornerIndex<n> ci1) :
     lo_(std::min(ci0, ci1)),
     hi_(std::max(ci0, ci1))
   {
@@ -84,18 +68,15 @@ class EdgeId
 template<int n , std::floating_point T>
 class FaceId
 {
- public:
-  using CornerIndex = typename HyperblockIndexCategory<n, T>::CornerIndex;
-
  private:
-  CornerIndex base_;    // A corner of the face with the varying bits (dim0, dim1) cleared; encodes the fixed coordinates.
+  CornerIndex<n> base_; // A corner of the face with the varying bits (dim0, dim1) cleared; encodes the fixed coordinates.
   int dim_lo_;          // Smaller varying dimension of the 2-face.
   int dim_hi_;          // Larger varying dimension of the 2-face.
 
  public:
   FaceId() = default;   // Construct an uninitialized FaceId.
 
-  FaceId(CornerIndex a_corner, int dim0, int dim1) :
+  FaceId(CornerIndex<n> a_corner, int dim0, int dim1) :
     base_(a_corner.get_value() & ~(to_mask(dim0) | to_mask(dim1))),
     dim_lo_(std::min(dim0, dim1)),
     dim_hi_(std::max(dim0, dim1))
@@ -156,13 +137,11 @@ class FaceSegment
 } // namespace detail
 
 template<int n , std::floating_point T = double>
-class Hyperblock : HyperblockIndexCategory<n, T>
+class Hyperblock
 {
  public:
-  using CornerIndex = typename HyperblockIndexCategory<n, T>::CornerIndex;
-  using EdgeIndex = typename HyperblockIndexCategory<n, T>::EdgeIndex;
-  using FaceIndex = typename HyperblockIndexCategory<n, T>::FaceIndex;
-  using IntersectionPointIndex = typename HyperblockIndexCategory<n, T>::IntersectionPointIndex;
+  struct IntersectionPointCategory;
+  using IntersectionPointIndex = utils::VectorIndex<IntersectionPointCategory>;
 
  public:
   static constexpr int number_of_corners = 1 << n;
@@ -170,14 +149,14 @@ class Hyperblock : HyperblockIndexCategory<n, T>
   using IntersectionPoints = utils::Vector<vector_type, IntersectionPointIndex>;
 
  private:
-  utils::Vector<vector_type, CornerIndex> C_;          // The 2^n corners of the hyperblock.
+  utils::Vector<vector_type, CornerIndex<n>> C_;        // The 2^n corners of the hyperblock.
 
  public:
   // Construct an axis-aligned hyperblock from two opposite corner vectors.
   Hyperblock(vector_type const& c1, vector_type const& c2) : C_(number_of_corners)
   {
     vector_type base = c2 - c1;
-    for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
+    for (CornerIndex<n> ci = C_.ibegin(); ci != C_.iend(); ++ci)
     {
       vector_type c;
       c.eigen().setZero();
@@ -192,14 +171,14 @@ class Hyperblock : HyperblockIndexCategory<n, T>
   }
 
   // Return the coordinates of corner ci as a vector.
-  vector_type const& operator[](CornerIndex ci) const
+  vector_type const& operator[](CornerIndex<n> ci) const
   {
     return C_[ci];
   }
 
   // Run over all corners of the HyperBlock by index.
-  CornerIndex ibegin() const { return C_.ibegin(); }
-  CornerIndex iend() const { return C_.iend(); }
+  CornerIndex<n> ibegin() const { return C_.ibegin(); }
+  CornerIndex<n> iend() const { return C_.iend(); }
 
   IntersectionPoints intersection_points(Hyperplane<n, T> const& plane) const;
 
@@ -272,7 +251,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
 {
   IntersectionPoints intersection_points;
 
-  utils::Vector<Sign, CornerIndex> side(number_of_corners);
+  utils::Vector<Sign, CornerIndex<n>> side(number_of_corners);
   for (CornerIndex ci = C_.ibegin(); ci != C_.iend(); ++ci)
     side[ci] = plane.side(C_[ci]);
 
@@ -329,7 +308,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
     for (int d = 0; d < n; ++d)
     {
       size_t const bit = to_mask(d);
-      CornerIndex const adjacent_ci{ci.get_value() ^ bit};
+      CornerIndex<n> const adjacent_ci{ci.get_value() ^ bit};
       Sign const adjacent_side = side[adjacent_ci];
       if (adjacent_side == positive)
         ++pos;
@@ -359,7 +338,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
         continue;
 
       // The corner on the opposite side along axis `e`.
-      CornerIndex ci_e1(ci_e0.get_value() | mask_e);
+      CornerIndex<n> ci_e1(ci_e0.get_value() | mask_e);
 
       // Skip edges that don't intersect with the hyper plane.
       if (side[ci_e0] == side[ci_e1])
