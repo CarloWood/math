@@ -25,7 +25,7 @@ inline size_t to_mask(int dim)
   return size_t{1} << dim;
 }
 
-template<int n , std::floating_point T>
+template<int n>
 class EdgeId
 {
  private:
@@ -104,13 +104,13 @@ template<int n , std::floating_point T>
 class FaceSegment
 {
  private:
-  EdgeId<n, T> entry_point_;
-  EdgeId<n, T> exit_point_;
+  EdgeId<n> entry_point_;
+  EdgeId<n> exit_point_;
 
  public:
   FaceSegment() = default;
 
-  void add(EdgeId<n, T> edge_id, bool entry_point)
+  void add(EdgeId<n> edge_id, bool entry_point)
   {
     if (entry_point)
       entry_point_ = edge_id;
@@ -119,14 +119,14 @@ class FaceSegment
   }
 
   // Accessor.
-  EdgeId<n, T> entry_point() const
+  EdgeId<n> entry_point() const
   {
     // Call add for the entry point.
     ASSERT(!entry_point_.undefined());
     return entry_point_;
   }
 
-  EdgeId<n, T> exit_point() const
+  EdgeId<n> exit_point() const
   {
     // Call add for the exit point.
     ASSERT(!exit_point_.undefined());
@@ -226,7 +226,7 @@ class Hyperblock
 
   void breadth_first_search(
     Edge const& current_edge,
-    std::map<detail::EdgeId<n, T>, Edge> const& edges,
+    std::map<detail::EdgeId<n>, Edge> const& edges,
     std::map<detail::FaceId<n, T>, detail::FaceSegment<n, T>> const& face_segments,
     IntersectionPoints& intersection_points) const;
 };
@@ -321,7 +321,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
   }
 
   // A map from EdgeId to Edge data.
-  std::map<EdgeId<n, T>, Edge> edges;
+  std::map<EdgeId<n>, Edge> edges;
   // A map from FaceId to the two intersected edges of that 2-face.
   std::map<FaceId<n, T>, FaceSegment<n, T>> face_segments;
 
@@ -347,7 +347,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
       // Found two corners on opposite sides of the hyperplane.
 
       // Construct a unique ID for the current edge between the two corners.
-      EdgeId<n, T> const edge_id(ci_e0, ci_e1);
+      EdgeId<n> const edge_id(ci_e0, ci_e1);
       Edge& current_edge = edges[edge_id];
       // Calculate the intersection point on this edge and store it in edges.
       current_edge.add_intersection_point(plane.intersection(C_[ci_e0], C_[ci_e1]));
@@ -458,7 +458,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
 template<int n, std::floating_point T>
 void Hyperblock<n, T>::breadth_first_search(
     Edge const& current_edge,
-    std::map<detail::EdgeId<n, T>, Edge> const& edges,
+    std::map<detail::EdgeId<n>, Edge> const& edges,
     std::map<detail::FaceId<n, T>, detail::FaceSegment<n, T>> const& face_segments,
     IntersectionPoints& intersection_points) const
 {
@@ -483,7 +483,7 @@ void Hyperblock<n, T>::breadth_first_search(
     {
       FaceId<n, T> const entry_face_id = *entry_face_iter;
       auto face_segment = face_segments.find(entry_face_id);
-      EdgeId<n, T> const exit_point = face_segment->second.exit_point();
+      EdgeId<n> const exit_point = face_segment->second.exit_point();
       auto exit_edge = edges.find(exit_point);
       ASSERT(exit_edge != edges.end());
       if (!exit_edge->second.is_visited())
