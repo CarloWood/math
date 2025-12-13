@@ -26,41 +26,6 @@ inline size_t to_mask(int dim)
 }
 
 template<int n>
-class FaceId
-{
- private:
-  CornerIndex<n> base_; // A corner of the face with the varying bits (dim0, dim1) cleared; encodes the fixed coordinates.
-  int dim_lo_;          // Smaller varying dimension of the 2-face.
-  int dim_hi_;          // Larger varying dimension of the 2-face.
-
- public:
-  FaceId() = default;   // Construct an uninitialized FaceId.
-
-  FaceId(CornerIndex<n> a_corner, int dim0, int dim1) :
-    base_(a_corner.get_value() & ~(to_mask(dim0) | to_mask(dim1))),
-    dim_lo_(std::min(dim0, dim1)),
-    dim_hi_(std::max(dim0, dim1))
-  {
-  }
-
-  friend bool operator<(FaceId const& lhs, FaceId const& rhs)
-  {
-    if (lhs.base_ != rhs.base_)
-      return lhs.base_ < rhs.base_;
-    if (lhs.dim_lo_ != rhs.dim_lo_)
-      return lhs.dim_lo_ < rhs.dim_lo_;
-    return lhs.dim_hi_ < rhs.dim_hi_;
-  }
-
-#ifdef CWDEBUG
-  void print_on(std::ostream& os) const
-  {
-    os << "{base:" << base_ << ", dim_lo:" << dim_lo_ << ", dim_hi:" << dim_hi_ << "}";
-  }
-#endif
-};
-
-template<int n>
 class FaceSegment
 {
  private:
@@ -154,12 +119,12 @@ class Hyperblock
   struct Node
   {
     vector_type intersection_point_;            // The intersection point of the HyperPlane with this Node.
-    std::set<detail::FaceId<n>> entry_faces;    // List of all faces that (the intersection point on) this Node is an entry point for.
-    std::set<detail::FaceId<n>> exit_faces;     // List of all faces that (the intersection point on) this Node is an exit point for.
+    std::set<kFaceIndex<n, 2>> entry_faces;     // List of all faces that (the intersection point on) this Node is an entry point for.
+    std::set<kFaceIndex<n, 2>> exit_faces;      // List of all faces that (the intersection point on) this Node is an exit point for.
     mutable bool visited_{false};
 
     void add_intersection_point(vector_type const& intersection_point);
-    void store(bool entry_point, detail::FaceId<n> const& face_id);
+    void store(bool entry_point, kFaceIndex<n, 2> const& face_index);
 
     // Accessors.
 
@@ -170,7 +135,7 @@ class Hyperblock
     auto entry_face_end() const { return entry_faces.end(); }
 
     // Return the lexiographically smallest face id that this edge is an entry point of.
-    detail::FaceId<n> first_entry_face() const
+    kFaceIndex<n, 2> first_entry_face() const
     {
       // Only call this function if is_entry_point returns true.
       ASSERT(is_entry_point());
@@ -187,7 +152,7 @@ class Hyperblock
   void breadth_first_search(
     Node const& current_edge,
     std::map<EdgeIndex<n>, Node> const& edges,
-    std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
+    std::map<kFaceIndex<n, 2>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const;
 };
 
@@ -198,12 +163,12 @@ void Hyperblock<n, T>::Node::add_intersection_point(vector_type const& intersect
 }
 
 template<int n , std::floating_point T>
-void Hyperblock<n, T>::Node::store(bool entry_point, detail::FaceId<n> const& face_id)
+void Hyperblock<n, T>::Node::store(bool entry_point, kFaceIndex<n, 2> const& face_index)
 {
   if (entry_point)
-    entry_faces.insert(face_id);
+    entry_faces.insert(face_index);
   else
-    exit_faces.insert(face_id);
+    exit_faces.insert(face_index);
 }
 
 template<int n, std::floating_point T>
@@ -282,8 +247,8 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
 
   // A map from EdgeIndex to Node data.
   std::map<EdgeIndex<n>, Node> edges;
-  // A map from FaceId to the two intersected edges of that 2-face.
-  std::map<FaceId<n>, FaceSegment<n>> face_segments;
+  // A map from kFaceIndex<n, 2> to the two intersected edges of that 2-face.
+  std::map<kFaceIndex<n, 2>, FaceSegment<n>> face_segments;
 
   using Edge = kFace<n, 1>;
   using axes_type = Edge::axes_type;
@@ -391,12 +356,12 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
         // Therefore is_entry_point=true : S is the point where the line enters the rectangle.
 
         // Construct a unique ID for the current 2-face.
-        FaceId<n> const face_id(ci_e0, edge_axis(), face_axis());
+        kFaceIndex<n, 2> const face_index({e_axis | f_axis, ci_e0});
         // Remember if the intersection point on the current edge is the entry point for the current face or not.
-        current_edge.store(is_entry_point, face_id);
+        current_edge.store(is_entry_point, face_index);
 
         // Remember per face which edges are cut and if that is an entry or exit point.
-        face_segments[face_id].add(edge_id, is_entry_point);
+        face_segments[face_index].add(edge_id, is_entry_point);
       }
     }
   }
@@ -424,7 +389,7 @@ template<int n, std::floating_point T>
 void Hyperblock<n, T>::breadth_first_search(
     Node const& current_edge,
     std::map<EdgeIndex<n>, Node> const& edges,
-    std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
+    std::map<kFaceIndex<n, 2>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const
 {
   using namespace detail;
@@ -446,8 +411,8 @@ void Hyperblock<n, T>::breadth_first_search(
     // Enqueue all exit edges reachable from faces for which this edge is an entry point.
     for (auto entry_face_iter = edge->entry_face_begin(); entry_face_iter != edge->entry_face_end(); ++entry_face_iter)
     {
-      FaceId<n> const entry_face_id = *entry_face_iter;
-      auto face_segment = face_segments.find(entry_face_id);
+      kFaceIndex<n, 2> const entry_face_index = *entry_face_iter;
+      auto face_segment = face_segments.find(entry_face_index);
       EdgeIndex<n> const exit_point = face_segment->second.exit_point();
       auto exit_edge = edges.find(exit_point);
       ASSERT(exit_edge != edges.end());
