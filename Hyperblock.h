@@ -100,7 +100,7 @@ class FaceId
 #endif
 };
 
-template<int n , std::floating_point T>
+template<int n>
 class FaceSegment
 {
  private:
@@ -227,7 +227,7 @@ class Hyperblock
   void breadth_first_search(
     Edge const& current_edge,
     std::map<detail::EdgeId<n>, Edge> const& edges,
-    std::map<detail::FaceId<n>, detail::FaceSegment<n, T>> const& face_segments,
+    std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const;
 };
 
@@ -323,7 +323,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
   // A map from EdgeId to Edge data.
   std::map<EdgeId<n>, Edge> edges;
   // A map from FaceId to the two intersected edges of that 2-face.
-  std::map<FaceId<n>, FaceSegment<n, T>> face_segments;
+  std::map<FaceId<n>, FaceSegment<n>> face_segments;
 
   for (int e = 0; e < n; ++e)         // Consider all edges along axis `e`.
   {
@@ -459,7 +459,7 @@ template<int n, std::floating_point T>
 void Hyperblock<n, T>::breadth_first_search(
     Edge const& current_edge,
     std::map<detail::EdgeId<n>, Edge> const& edges,
-    std::map<detail::FaceId<n>, detail::FaceSegment<n, T>> const& face_segments,
+    std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const
 {
   using namespace detail;
