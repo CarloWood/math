@@ -203,7 +203,7 @@ struct Permutation
 
   template<std::integral... Index>
   requires (sizeof...(Index) == N)
-  explicit Permutation(Index... indices) : seq_{static_cast<uint8_t>(indices)...} { }
+  explicit Permutation(Index... indexes) : seq_{static_cast<uint8_t>(indexes)...} { }
 
   bool is_odd() const
   {
