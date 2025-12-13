@@ -65,6 +65,7 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
   // A bitset that can hold at least n bits, where each bit represents an axis.
   using axes_type = utils::BitSet<utils::uint_leastN_t<n>>;
   static constexpr uint32_t fixed_mask = utils::create_mask<uint32_t, n - k>();
+  static constexpr uint32_t corner_mask = utils::create_mask<uint32_t, n>();
 
   // The number of k-faces of an n-cube.
   static constexpr size_t size = static_cast<size_t>(binomial(n, k)) << (n - k);
@@ -78,7 +79,11 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
   constexpr kFaceIndex() = default;
 
   // Construct a corner.
-  constexpr kFaceIndex(utils::uint_leastN_t<n> value) requires (k == 0) : utils::VectorIndex<kFaceData<n, k>>(static_cast<size_t>(value)) { }
+  constexpr kFaceIndex(size_t value) requires (k == 0) : utils::VectorIndex<kFaceData<n, k>>(value)
+  {
+    // All unused bits must be zero.
+    ASSERT((value & corner_mask) == value);
+  }
 
   // Construct a kFaceIndex from some given kFace.
   kFaceIndex(kFaceData<n, k> const& kface) : utils::VectorIndex<kFaceData<n, k>>(static_cast<size_t>(rank(kface.k_axes) << (n - k) | kface.zero_corner.remove_bits(kface.k_axes))) { }
