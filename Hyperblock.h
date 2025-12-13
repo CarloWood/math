@@ -151,11 +151,11 @@ class Hyperblock
 #endif
 
  private:
-  struct Edge
+  struct Node
   {
-    vector_type intersection_point_;            // The intersection point of the HyperPlane with this Edge.
-    std::set<detail::FaceId<n>> entry_faces;    // List of all faces that (the intersection point on) this Edge is an entry point for.
-    std::set<detail::FaceId<n>> exit_faces;     // List of all faces that (the intersection point on) this Edge is an exit point for.
+    vector_type intersection_point_;            // The intersection point of the HyperPlane with this Node.
+    std::set<detail::FaceId<n>> entry_faces;    // List of all faces that (the intersection point on) this Node is an entry point for.
+    std::set<detail::FaceId<n>> exit_faces;     // List of all faces that (the intersection point on) this Node is an exit point for.
     mutable bool visited_{false};
 
     void add_intersection_point(vector_type const& intersection_point);
@@ -185,20 +185,20 @@ class Hyperblock
   };
 
   void breadth_first_search(
-    Edge const& current_edge,
-    std::map<EdgeIndex<n>, Edge> const& edges,
+    Node const& current_edge,
+    std::map<EdgeIndex<n>, Node> const& edges,
     std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const;
 };
 
 template<int n , std::floating_point T>
-void Hyperblock<n, T>::Edge::add_intersection_point(vector_type const& intersection_point)
+void Hyperblock<n, T>::Node::add_intersection_point(vector_type const& intersection_point)
 {
   intersection_point_ = intersection_point;
 }
 
 template<int n , std::floating_point T>
-void Hyperblock<n, T>::Edge::store(bool entry_point, detail::FaceId<n> const& face_id)
+void Hyperblock<n, T>::Node::store(bool entry_point, detail::FaceId<n> const& face_id)
 {
   if (entry_point)
     entry_faces.insert(face_id);
@@ -280,25 +280,29 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
     side[ci] = (pos >= neg) ? positive : negative;
   }
 
-  // A map from EdgeIndex to Edge data.
-  std::map<EdgeIndex<n>, Edge> edges;
+  // A map from EdgeIndex to Node data.
+  std::map<EdgeIndex<n>, Node> edges;
   // A map from FaceId to the two intersected edges of that 2-face.
   std::map<FaceId<n>, FaceSegment<n>> face_segments;
 
-  for (int e = 0; e < n; ++e)         // Consider all edges along axis `e`.
+  using Edge = kFace<n, 1>;
+  using axes_type = Edge::axes_type;
+  using Index = axes_type::Index;
+  using namespace utils::bitset;
+  IndexPOD const index_end{n};
+  for (Index edge_axis = index_begin; edge_axis != index_end; ++edge_axis)   // Consider all edges along axis `edge_axis`.
   {
-    // Run over all corners that have coordinate 0 for axis `e`.
+    axes_type const e_axis(edge_axis);
+    // Run over all corners that have coordinate 0 for `edge_axis`.
     for (CornerIndex ci_e0 = C_.ibegin(); ci_e0 != C_.iend(); ++ci_e0)
     {
-      size_t const mask_e = to_mask(e);
-      size_t const bit_e = ci_e0.get_value() & mask_e;
-
-      // Skip the corners where coordinate `e` isn't zero.
-      if (bit_e != 0)
+      bool const bit_e = ci_e0.get_value() & e_axis();
+      // Skip the corners where coordinate `edge_axis` isn't zero.
+      if (bit_e)
         continue;
 
-      // The corner on the opposite side along axis `e`.
-      CornerIndex<n> ci_e1(ci_e0.get_value() | mask_e);
+      // The corner on the opposite side along axis `edge_axis`.
+      CornerIndex<n> ci_e1(ci_e0.get_value() | e_axis());
 
       // Skip edges that don't intersect with the hyper plane.
       if (side[ci_e0] == side[ci_e1])
@@ -307,57 +311,58 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
       // Found two corners on opposite sides of the hyperplane.
 
       // Construct a unique ID for the current edge between the two corners.
-      EdgeIndex<n> const edge_id(ci_e0, ci_e1);
-      Edge& current_edge = edges[edge_id];
+      EdgeIndex<n> const edge_id({e_axis, ci_e0});
+      Node& current_edge = edges[edge_id];
       // Calculate the intersection point on this edge and store it in edges.
       current_edge.add_intersection_point(plane.intersection(C_[ci_e0], C_[ci_e1]));
 
       // Run over all 2-faces that this edge is a part of.
-      for (int f = 0; f < n; ++f)
+      for (Index face_axis = index_begin; face_axis != index_end; ++face_axis)  // The other axis of this 2-face (besides edge_axis).
       {
-        if (f == e)
+        if (face_axis == edge_axis)
           continue;
 
-        // Dimensions e and f span a 2-face.
-        size_t const mask_f = to_mask(f);
-        size_t const bit_f = ci_e0.get_value() & mask_f;
+        // Dimensions edge_axis and face_axis span a 2-face.
+        axes_type const f_axis(face_axis);
+        bool const bit_f = ci_e0.get_value() & f_axis();
+        size_t const zero_corner = ci_e0.get_value() & ~f_axis();       // The zero-corner of the 2-face.
 
         // Determine the clock-wise order in which the four corners of this 2-face occur, looking at it from the outside of the hyper-block.
         //
-        // If e < f, then this picture matches the discussion with chatgpt:
+        // If edge_axis < face_axis, then this picture matches the discussion with chatgpt:
         // See https://chatgpt.com/share/692e1f87-b2b0-800d-960e-dea2e1b0b83a
         //
-        //                             +1            -1       <-- change in e.
+        //                             +1            -1       <-- change in edge_axis.
         //                            f=1           f=0
         //                         .---^---.     .---^---.
         // Order A means:   00 --> 01 --> 11 --> 10 --> 00
         //                         ||            ||
-        //                      +1 ||         -1 ||           <-- change in e.
+        //                      +1 ||         -1 ||           <-- change in edge_axis.
         //                     f=0 ||        f=1 ||
         //                  .---^---.     .---^---.
         // Order B means:   00 --> 10 --> 11 --> 01 --> 00
         //                         ^^            ^^
         //                      e_/  \_f      e_/  \_f
         //
-        // If f < e, then the picture holds:
-        //                      +1            -1              <-- change in e.
+        // If face_axis < edge_axis, then the picture holds:
+        //                      +1            -1              <-- change in edge_axis.
         //                     f=0           f=1
         //                  .---^---.     .---^---.
         // Order A means:   00 --> 01 --> 11 --> 10 --> 00
         //                         ||            ||
-        //                         ||  +1        ||  -1       <-- change in e.
+        //                         ||  +1        ||  -1       <-- change in edge_axis.
         //                         || f=1        || f=0
         //                         .---^---.     .---^---.
         // Order B means:   00 --> 10 --> 11 --> 01 --> 00
         //                         ^^            ^^
-        //                      f_/  \_e      f_/  \_e        <-- iff f < e.
+        //                      f_/  \_e      f_/  \_e        <-- iff face_axis < edge_axis.
         //
-        bool order_A = (std::popcount(ci_e0.get_value() & ~mask_f) + n + (f - e)) & 1;
+        bool order_A = (std::popcount(zero_corner) + n + (face_axis - edge_axis)) & 1;
         // All other coordinates of this vector are zero.
-        int const edge_direction = /* vector along the edge with coordinate for axis `e`: */ (order_A == (bit_f == 0)) != (f < e) ? -1 : 1;
+        int const edge_direction = /* vector along the edge with coordinate for `edge_axis`: */ (order_A != bit_f) != (face_axis < edge_axis) ? -1 : 1;
         //
         // Get the (sign of the) component of the normal of the hyper plane along the edge direction.
-        int const n_e = plane.normal()[e] < 0.0 ? -1 : 1;
+        int const n_e = plane.normal()[edge_axis()] < 0.0 ? -1 : 1;
         // Now we can calculate the (sign of the) dot product between the hyperplane normal and the directional vector that goes clockwise around the 2-face.
         // If this sign is positive then this is the entry point (S) of this 2-face, otherwise it is the exit point (E).
         bool is_entry_point = edge_direction * n_e > 0;
@@ -377,16 +382,16 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
         //                          start                          ^
         //                                                          \ bit_f
         //
-        // The point S has corners ci_e0 (0,0) and ci_e1 (1,0), e=0 (the first coordinate).
-        // The 2-face is spanned by e=0 and f=1 (the second (and only other) coordinate).
+        // The point S has corners ci_e0 (0,0) and ci_e1 (1,0), edge_axis=0 (the first coordinate).
+        // The 2-face is spanned by edge_axis=0 and face_axis=1 (the second (and only other) coordinate).
         // bit_f = 0
-        // ci_e0.get_value() = b00, n=2, f-e=1 --> order_A = true: going clockwise we encounter in order: (0,0) --> (0,1) --> (1,1) --> (1,0) --> (0,0)
+        // ci_e0.get_value() = b00, n=2, face_axis-edge_axis=1 --> order_A = true: going clockwise we encounter in order: (0,0) --> (0,1) --> (1,1) --> (1,0) --> (0,0)
         // Thus edge_direction=-1 (going from x=1 to x=0).
-        // The component of the normal along e also -1 (N points "to the left").
+        // The component of the normal along edge_axis also -1 (N points "to the left").
         // Therefore is_entry_point=true : S is the point where the line enters the rectangle.
 
         // Construct a unique ID for the current 2-face.
-        FaceId<n> const face_id(ci_e0, e, f);
+        FaceId<n> const face_id(ci_e0, edge_axis(), face_axis());
         // Remember if the intersection point on the current edge is the entry point for the current face or not.
         current_edge.store(is_entry_point, face_id);
 
@@ -406,7 +411,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
       ++first_edge_iter;
       ASSERT(first_edge_iter != edges.end());
     }
-    Edge const& first_edge{first_edge_iter->second};
+    Node const& first_edge{first_edge_iter->second};
 
     // Run over all edges from here, following face segments for which we are the entry point in a breath-first manner and store the intersection point of each edge.
     breadth_first_search(first_edge, edges, face_segments, intersection_points);
@@ -417,19 +422,19 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
 
 template<int n, std::floating_point T>
 void Hyperblock<n, T>::breadth_first_search(
-    Edge const& current_edge,
-    std::map<EdgeIndex<n>, Edge> const& edges,
+    Node const& current_edge,
+    std::map<EdgeIndex<n>, Node> const& edges,
     std::map<detail::FaceId<n>, detail::FaceSegment<n>> const& face_segments,
     IntersectionPoints& intersection_points) const
 {
   using namespace detail;
 
-  std::queue<Edge const*> queue;
+  std::queue<Node const*> queue;
   queue.push(&current_edge);
 
   while (!queue.empty())
   {
-    Edge const* edge = queue.front();
+    Node const* edge = queue.front();
     queue.pop();
 
     if (edge->is_visited())

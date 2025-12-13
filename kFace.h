@@ -128,9 +128,9 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
 template<int n, int k>
 class kFace : public kFaceData<n, k>
 {
+ public:
   using axes_type = kFaceData<n, k>::axes_type;
 
- public:
   kFace(kFaceData<n, k> const& data) : kFaceData<n, k>(data) { }
 
  private:
