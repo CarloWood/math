@@ -35,12 +35,12 @@ class FaceSegment
  public:
   FaceSegment() = default;
 
-  void add(EdgeIndex<n> edge_id, bool entry_point)
+  void add(EdgeIndex<n> ei, bool entry_point)
   {
     if (entry_point)
-      entry_point_ = edge_id;
+      entry_point_ = ei;
     else
-      exit_point_ = edge_id;
+      exit_point_ = ei;
   }
 
   // Accessor.
@@ -59,6 +59,29 @@ class FaceSegment
   }
 };
 
+template<int n, std::floating_point T>
+class IntersectionPoint
+{
+ public:
+  using vector_type = math::Vector<n, T>;
+
+ private:
+  vector_type vector_;
+  EdgeIndex<n> ei_;
+
+ public:
+  void init(vector_type const& vector, EdgeIndex<n> ei)
+  {
+    vector_ = vector;
+    ei_ = ei;
+  }
+
+  operator vector_type const&() const { return vector_; }
+  EdgeIndex<n> edge_index() const { return ei_; }
+
+  T const& coordinate(int i) const { return vector_[i]; }
+};
+
 } // namespace detail
 
 template<int n , std::floating_point T = double>
@@ -71,7 +94,7 @@ class Hyperblock
  public:
   static constexpr int number_of_corners = 1 << n;
   using vector_type = math::Vector<n, T>;
-  using IntersectionPoints = utils::Vector<vector_type, IntersectionPointIndex>;
+  using IntersectionPoints = utils::Vector<detail::IntersectionPoint<n, T>, IntersectionPointIndex>;
 
  private:
   utils::Vector<vector_type, CornerIndex<n>> C_;        // The 2^n corners of the hyperblock.
@@ -118,12 +141,12 @@ class Hyperblock
  private:
   struct Node
   {
-    vector_type intersection_point_;            // The intersection point of the HyperPlane with this Node.
-    std::set<kFaceIndex<n, 2>> entry_faces;     // List of all faces that (the intersection point on) this Node is an entry point for.
-    std::set<kFaceIndex<n, 2>> exit_faces;      // List of all faces that (the intersection point on) this Node is an exit point for.
+    detail::IntersectionPoint<n, T> intersection_point_;        // The intersection point of the HyperPlane with this Node and the edge index of the edge that it is on.
+    std::set<kFaceIndex<n, 2>> entry_faces;                     // List of all faces that (the intersection point on) this Node is an entry point for.
+    std::set<kFaceIndex<n, 2>> exit_faces;                      // List of all faces that (the intersection point on) this Node is an exit point for.
     mutable bool visited_{false};
 
-    void add_intersection_point(vector_type const& intersection_point);
+    void set_intersection_point(vector_type const& point, EdgeIndex<n> ei);
     void store(bool entry_point, kFaceIndex<n, 2> const& face_index);
 
     // Accessors.
@@ -157,9 +180,9 @@ class Hyperblock
 };
 
 template<int n , std::floating_point T>
-void Hyperblock<n, T>::Node::add_intersection_point(vector_type const& intersection_point)
+void Hyperblock<n, T>::Node::set_intersection_point(vector_type const& vector, EdgeIndex<n> ei)
 {
-  intersection_point_ = intersection_point;
+  intersection_point_.init(vector, ei);
 }
 
 template<int n , std::floating_point T>
@@ -276,10 +299,10 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
       // Found two corners on opposite sides of the hyperplane.
 
       // Construct a unique ID for the current edge between the two corners.
-      EdgeIndex<n> const edge_id({e_axis, ci_e0});
-      Node& current_edge = edges[edge_id];
+      EdgeIndex<n> const ei{{e_axis, ci_e0}};
+      Node& current_edge = edges[ei];
       // Calculate the intersection point on this edge and store it in edges.
-      current_edge.add_intersection_point(plane.intersection(C_[ci_e0], C_[ci_e1]));
+      current_edge.set_intersection_point(plane.intersection(C_[ci_e0], C_[ci_e1]), ei);
 
       // Run over all 2-faces that this edge is a part of.
       for (Index face_axis = index_begin; face_axis != index_end; ++face_axis)  // The other axis of this 2-face (besides edge_axis).
@@ -361,7 +384,7 @@ typename Hyperblock<n, T>::IntersectionPoints Hyperblock<n, T>::intersection_poi
         current_edge.store(is_entry_point, face_index);
 
         // Remember per face which edges are cut and if that is an entry or exit point.
-        face_segments[face_index].add(edge_id, is_entry_point);
+        face_segments[face_index].add(ei, is_entry_point);
       }
     }
   }
@@ -405,7 +428,7 @@ void Hyperblock<n, T>::breadth_first_search(
     if (edge->is_visited())
       continue;
 
-    intersection_points.emplace_back(edge->intersection_point_);
+    intersection_points.push_back(edge->intersection_point_);
     edge->visited();
 
     // Enqueue all exit edges reachable from faces for which this edge is an entry point.
