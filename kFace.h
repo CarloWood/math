@@ -79,10 +79,17 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
   constexpr kFaceIndex() = default;
 
   // Construct a corner.
-  constexpr kFaceIndex(size_t value) requires (k == 0) : utils::VectorIndex<kFaceData<n, k>>(value)
+  // Alow constructing a k-face index from ibegin and iend (for use with for loops).
+  constexpr kFaceIndex(size_t value) : utils::VectorIndex<kFaceData<n, k>>(value)
   {
-    // All unused bits must be zero, except if value is possibly `end` by being one larger than the maximum allowed index.
-    ASSERT((value & corner_mask) == value || value == size_t{1} << n);
+#if CW_DEBUG
+    if constexpr (k == 0)
+      // All unused bits must be zero, except if value is possibly `end` by being one larger than the maximum allowed index.
+      ASSERT((value & corner_mask) == value || value == size_t{1} << n);
+    else
+      // This should only be used as part of calling ibegin() and/or iend().
+      ASSERT(value == size_t{0} || static_cast<size_t>(value) == size);
+#endif
   }
 
   // Construct a kFaceIndex from some given kFace.
@@ -91,7 +98,7 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
   // Construct a zero-corner by inserting zeroes into `fixed_bits` at the positions of `k_axes`.
   kFaceIndex(axes_type k_axes, uint32_t fixed_bits) requires (k == 0) : utils::VectorIndex<kFaceData<n, k>>(fixed_bits) { insert_bits(k_axes); }
 
-  std::array<kFaceIndex<n, k - 1>, number_of_facets> facet_indexes() requires (k > 0);
+  std::array<kFaceIndex<n, k - 1>, number_of_facets> facet_indexes() const requires (k > 0);
 
   kFace<n, k> as_kface() const;
 
@@ -123,6 +130,10 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
 
     this->m_value = utils::deposit_bits(value, mask);
   }
+
+ public:
+  static constexpr kFaceIndex ibegin() { return kFaceIndex{size_t{0}}; }
+  static constexpr kFaceIndex iend() { return kFaceIndex{size}; }
 };
 
 template<int n, int k>
@@ -169,7 +180,7 @@ kFace<n, k> kFaceIndex<n, k>::as_kface() const
 
 template<int n, int k>
 std::array<kFaceIndex<n, k - 1>, kFaceIndex<n, k>::number_of_facets>
-kFaceIndex<n, k>::facet_indexes() requires (k > 0)
+kFaceIndex<n, k>::facet_indexes() const requires (k > 0)
 {
   std::array<kFaceIndex<n, k - 1>, kFaceIndex<n, k>::number_of_facets> result;
 
@@ -251,4 +262,3 @@ typename kFaceIndex<n, k>::axes_type kFaceIndex<n, k>::unrank(uint32_t r)
 }
 
 } // namespace math
-
