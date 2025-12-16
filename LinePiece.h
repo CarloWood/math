@@ -28,6 +28,7 @@ class LinePiece
   point_type const& from() const { return from_; }
   point_type const& to() const { return to_; }
   T norm() const { return (to_.eigen() - from_.eigen()).norm(); }
+  T norm_squared() const { return (to_.eigen() - from_.eigen()).squaredNorm(); }
 
   direction_type direction() const;
 
