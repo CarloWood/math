@@ -25,10 +25,7 @@ class PointData
 {
  public:
   static constexpr int n = N;
-  using scalar_type = T;
   using eigen_type = Eigen::Matrix<T, N, 1>;
-  using vector_type = Vector<N, T>;
-  using direction_type = Direction<N, T>;
 
  protected:
   eigen_type p_;
@@ -53,107 +50,30 @@ class PointData
 template<typename DerivedTypes>
 struct PointOps
 {
-  using derived_type           = typename DerivedTypes::derived_type;
-  using derived_scalar_type    = typename DerivedTypes::scalar_type;
-  using raw_type = Point<DerivedTypes::n, typename DerivedTypes::scalar_type>;
-
   static constexpr int derived_n = DerivedTypes::n;
-  static constexpr bool is_raw = std::is_same_v<derived_type, raw_type>;
-
-  typename DerivedTypes::scalar_type& operator[](int i)
-  {
-    if constexpr (is_raw)
-      return p()(i);
-    else
-      return r().operator[](i);
-  }
-
-  typename DerivedTypes::scalar_type const& operator[](int i) const
-  {
-    if constexpr (is_raw)
-      return p()(i);
-    else
-      return r().operator[](i);
-  }
-
-  typename DerivedTypes::scalar_type& x()
-  {
-    if constexpr (is_raw)
-    {
-      static_assert(derived_n >= 1);
-      return p()[0];
-    }
-    else
-      return r().x();
-  }
-
-  typename DerivedTypes::scalar_type& y()
-  {
-    if constexpr (is_raw)
-    {
-      static_assert(derived_n >= 2);
-      return p()[1];
-    }
-    else
-      return r().y();
-  }
-
-  typename DerivedTypes::scalar_type& z()
-  {
-    if constexpr (is_raw)
-    {
-      static_assert(derived_n >= 3);
-      return p()[2];
-    }
-    else
-      return r().z();
-  }
-
-  typename DerivedTypes::scalar_type x() const
-  {
-    if constexpr (is_raw)
-    {
-      static_assert(derived_n >= 1);
-      return p()[0];
-    }
-    else
-      return r().x();
-  }
-
-  typename DerivedTypes::scalar_type y() const
-  {
-    if constexpr (is_raw)
-    {
-      static_assert(derived_n >= 2);
-      return p()[1];
-    }
-    else
-      return r().y();
-  }
-
-  typename DerivedTypes::scalar_type z() const
-  {
-    if constexpr (is_raw)
-    {
-      static_assert(derived_n >= 3);
-      return p()[2];
-    }
-    else
-      return r().z();
-  }
-
-  derived_type operator+(typename DerivedTypes::direction_type const& direction);
-  derived_type operator+(typename DerivedTypes::vector_type const& v);
-  derived_type operator-(typename DerivedTypes::vector_type const& v);
-  derived_type& operator+=(typename DerivedTypes::direction_type const& direction);
-  derived_type& operator+=(typename DerivedTypes::vector_type const& v);
-  derived_type& operator-=(typename DerivedTypes::vector_type const& v);
+  using derived_scalar_type    = typename DerivedTypes::scalar_type;
+  using derived_type           = typename DerivedTypes::derived_type;
 
  private:
-  auto& p() { return static_cast<derived_type*>(this)->eigen(); }
-  auto const& p() const { return static_cast<derived_type const*>(this)->eigen(); }
-  auto& r() { return static_cast<derived_type*>(this)->raw(); }
-  auto const& r() const { return static_cast<derived_type const*>(this)->raw(); }
+  auto& raw_() { return static_cast<derived_type*>(this)->raw(); }
+  auto const& raw_() const { return static_cast<derived_type const*>(this)->raw(); }
+
+ public:
+  derived_scalar_type&       operator[](int i)       { return raw_().operator[](i); }
+  derived_scalar_type const& operator[](int i) const { return raw_().operator[](i); }
+  derived_scalar_type& x()      { return raw_().x(); }
+  derived_scalar_type x() const { return raw_().x(); }
+  derived_scalar_type& y()      { return raw_().y(); }
+  derived_scalar_type y() const { return raw_().y(); }
+  derived_scalar_type& z()      { return raw_().z(); }
+  derived_scalar_type z() const { return raw_().z(); }
+
+  inline derived_type operator+(typename DerivedTypes::direction_type const& direction);
+  inline derived_type operator+(typename DerivedTypes::vector_type const& v);
+  inline derived_type operator-(typename DerivedTypes::vector_type const& v);
+  inline derived_type& operator+=(typename DerivedTypes::direction_type const& direction);
+  inline derived_type& operator+=(typename DerivedTypes::vector_type const& v);
+  inline derived_type& operator-=(typename DerivedTypes::vector_type const& v);
 };
 
 // Forward declaration, required for PointTypes<N, T>::derived_type.
@@ -165,13 +85,47 @@ struct PointTypes
 {
   static constexpr int n = N;
   using scalar_type    = T;
-  using derived_type   = Point<N, T>;                                   // Incomplete type, used to cast return types too.
-  using vector_type    = typename PointData<N, T>::vector_type;
-  using direction_type = typename PointData<N, T>::direction_type;
+  // The following types will be incomplete while begin used in PointOps. Used for casting and/or function prototypes.
+  using derived_type   = Point<N, T>;
+  using vector_type    = Vector<N, T>;
+  using direction_type = Direction<N, T>;
+};
+
+// Specialization of the Point operators specifically for math::Point itself.
+template<int N, typename T>
+struct PointOps<PointTypes<N, T>>
+{
+ private:
+  // Get underlying Eigen type.
+  auto& eigen_() { return static_cast<Point<N, T>*>(this)->eigen(); }
+  auto const& eigen_() const { return static_cast<Point<N, T> const*>(this)->eigen(); }
+
+ public:
+  // Access coordinates.
+  T&       operator[](int i)       { return eigen_()(i); }
+  T const& operator[](int i) const { return eigen_()(i); }
+  T& x()      { static_assert(N >= 1); return eigen_()[0]; }
+  T x() const { static_assert(N >= 1); return eigen_()[0]; }
+  T& y()      { static_assert(N >= 2); return eigen_()[1]; }
+  T y() const { static_assert(N >= 2); return eigen_()[1]; }
+  T& z()      { static_assert(N >= 3); return eigen_()[2]; }
+  T z() const { static_assert(N >= 3); return eigen_()[2]; }
+
+  // Add a direction.
+  inline Point<N, T> operator+(Direction<N, T> const& direction);
+  inline Point<N, T>& operator+=(Direction<N, T> const& direction);
+
+  // Add or subtract a vector.
+  inline Point<N, T> operator+(Vector<N, T> const& v);
+  inline Point<N, T> operator-(Vector<N, T> const& v);
+  inline Point<N, T>& operator+=(Vector<N, T> const& v);
+  inline Point<N, T>& operator-=(Vector<N, T> const& v);
 };
 
 template<int N, typename T = double>
-class Point : public PointData<N, T>, public PointOps<PointTypes<N, T>>
+class Point :
+  public PointData<N, T>,               // Wraps underlying Eigen type and defines constructors.
+  public PointOps<PointTypes<N, T>>     // Defines possible operations on the Point (uses the above specialization).
 {
  public:
   // Constructors.
@@ -198,60 +152,84 @@ namespace math {
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::direction_type const& direction)
 {
-  if constexpr (is_raw)
-    return static_cast<derived_type>(p() + direction.eigen());
-  else
-    return static_cast<derived_type>(r().operator+(direction));
+  return static_cast<derived_type>(raw_().operator+(direction));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::vector_type const& v)
 {
-  if constexpr (is_raw)
-    return static_cast<derived_type>(p() + v.eigen());
-  else
-    return static_cast<derived_type>(r().operator+(v));
+  return static_cast<derived_type>(raw_().operator+(v));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename DerivedTypes::vector_type const& v)
 {
-  if constexpr (is_raw)
-    return static_cast<derived_type>(p() - v.eigen());
-  else
-    return static_cast<derived_type>(r().operator-(v));
+  return static_cast<derived_type>(raw_().operator-(v));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::direction_type const& direction)
 {
-  if constexpr (is_raw)
-    return static_cast<derived_type&>(p() += direction.eigen());
-  else
-    return static_cast<derived_type&>(r().operator+=(direction));
+  return static_cast<derived_type&>(raw_().operator+=(direction));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::vector_type const& v)
 {
-  if constexpr (is_raw)
-    return static_cast<derived_type&>(p() += v.eigen());
-  else
-    return static_cast<derived_type&>(r().operator+=(v));
+  return static_cast<derived_type&>(raw_().operator+=(v));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator-=(typename DerivedTypes::vector_type const& v)
 {
-  if constexpr (is_raw)
-    return static_cast<derived_type&>(p() -= v.eigen());
-  else
-    return static_cast<derived_type&>(r().operator-=(v));
+  return static_cast<derived_type&>(raw_().operator-=(v));
+}
+
+// Specialization of the Point binary operators specifically for math::Point itself.
+
+template<int N, typename T>
+Point<N, T> PointOps<PointTypes<N, T>>::operator+(Direction<N, T> const& direction)
+{
+  return {eigen_() + direction.eigen()};
+}
+
+template<int N, typename T>
+Point<N, T> PointOps<PointTypes<N, T>>::operator+(Vector<N, T> const& v)
+{
+  return {eigen_() + v.eigen()};
+}
+
+template<int N, typename T>
+Point<N, T> PointOps<PointTypes<N, T>>::operator-(Vector<N, T> const& v)
+{
+  return {eigen_() - v.eigen()};
+}
+
+template<int N, typename T>
+Point<N, T>& PointOps<PointTypes<N, T>>::operator+=(Direction<N, T> const& direction)
+{
+  eigen_() += direction.eigen();
+  return static_cast<Point<N, T>&>(*this);
+}
+
+template<int N, typename T>
+Point<N, T>& PointOps<PointTypes<N, T>>::operator+=(Vector<N, T> const& v)
+{
+  eigen_() += v.eigen();
+  return static_cast<Point<N, T>&>(*this);
+}
+
+template<int N, typename T>
+Point<N, T>& PointOps<PointTypes<N, T>>::operator-=(Vector<N, T> const& v)
+{
+  eigen_() -= v.eigen();
+  return static_cast<Point<N, T>&>(*this);
 }
 
 //-----------------------------------------------------------------------------
 // Free function binary operators.
 //
+
 template<typename DerivedTypes>
 typename DerivedTypes::vector_type operator-(PointOps<DerivedTypes> const& to, PointOps<DerivedTypes> const& from)
 {
@@ -266,6 +244,8 @@ bool operator!=(PointOps<DerivedTypes> const& p1, PointOps<DerivedTypes> const& 
       return true;
   return false;
 }
+
+//
 //-----------------------------------------------------------------------------
 
 #ifdef CWDEBUG
