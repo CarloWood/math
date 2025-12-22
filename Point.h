@@ -24,7 +24,6 @@ template<int N, typename T>
 class PointData
 {
  public:
-  static constexpr int n = N;
   using eigen_type = Eigen::Matrix<T, N, 1>;
 
  protected:
@@ -152,37 +151,37 @@ namespace math {
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::direction_type const& direction)
 {
-  return static_cast<derived_type>(raw_().operator+(direction));
+  return static_cast<derived_type>(raw_().operator+(direction.raw()));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type>(raw_().operator+(v));
+  return static_cast<derived_type>(raw_().operator+(v.raw()));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type>(raw_().operator-(v));
+  return static_cast<derived_type>(raw_().operator-(v.raw()));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::direction_type const& direction)
 {
-  return static_cast<derived_type&>(raw_().operator+=(direction));
+  return static_cast<derived_type&>(raw_().operator+=(direction.raw()));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type&>(raw_().operator+=(v));
+  return static_cast<derived_type&>(raw_().operator+=(v.raw()));
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator-=(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type&>(raw_().operator-=(v));
+  return static_cast<derived_type&>(raw_().operator-=(v.raw()));
 }
 
 // Specialization of the Point binary operators specifically for math::Point itself.
