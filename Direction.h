@@ -2,6 +2,8 @@
 #define MATH_DIRECTION_H
 
 #include "LinePiece.h"
+#include "Point.h"
+#include <Eigen/Core>
 #include <cmath>
 #ifdef CWDEBUG
 #include "utils/has_print_on.h"
