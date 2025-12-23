@@ -6,6 +6,10 @@
 
 namespace math {
 
+// Friend of LineData.
+template<typename DerivedTypes>
+struct LineOps;
+
 template<int N, typename T>
 class LineData
 {
@@ -14,6 +18,9 @@ class LineData
   using direction_type = Direction<N, T>;
 
  protected:
+  template<typename DerivedTypes>
+  friend struct LineOps;
+
   point_type point_;
   direction_type direction_;
 
@@ -23,9 +30,6 @@ class LineData
 
   // Construct a line through point with direction.
   LineData(point_type const& point, direction_type const& direction) : point_(point), direction_(direction) { }
-
-  point_type const& point() const { return point_; }
-  direction_type const& direction() const { return direction_; }
 
 #ifdef CWDEBUG
   void print_on(std::ostream& os) const;
@@ -74,14 +78,13 @@ struct LineTypes
 template<int N, typename T>
 struct LineOps<LineTypes<N, T>>
 {
- private:
-  // Get underlying point and direction types.
-  auto const& point_() const { return static_cast<Line<N, T> const*>(this)->point(); }
-  auto const& direction_() const { return static_cast<Line<N, T> const*>(this)->direction(); }
-
  public:
+  // Accessors.
+  Point<N, T> const& point() const { return static_cast<Line<N, T> const*>(this)->point_; }
+  Direction<N, T> const& direction() const { return static_cast<Line<N, T> const*>(this)->direction_; }
+
   // It is allowed to pass a Line to a function that takes a Direction.
-  operator Direction<N, T> const&() const { return direction_(); }
+  operator Direction<N, T> const&() const { return direction(); }
 
   // Return the intersection with another Line.
   Point<N, T> intersection_with(Line<N, T> const& line2) const requires (N == 2);
@@ -107,8 +110,8 @@ Point<N, T> LineOps<LineTypes<N, T>>::intersection_with(Line<N, T> const& L1) co
   // Line0: P0 + λ D0
   // Line1: P1 + ξ D1
 
-  Point<N, T> const& P0 = point_();
-  Direction<N, T> const& D0 = direction_();
+  Point<N, T> const& P0 = point();
+  Direction<N, T> const& D0 = direction();
   Point<N, T> const& P1 = L1.point();
   Direction<N, T> const& D1 = L1.direction();
 
@@ -141,13 +144,13 @@ Point<N, T> LineOps<LineTypes<N, T>>::intersection_with(Line<N, T> const& L1) co
   // Note, in the above picture: a = -(P1 - P0)·N1, and b = -D0·N1
 
   // Take dot product of P1-P0 with N1:
-  T P1P0_dot_N1 = (L1.point().x() - point_().x()) * N1.x() + (L1.point().y() - point_().y()) * N1.y();
+  T P1P0_dot_N1 = (L1.point().x() - point().x()) * N1.x() + (L1.point().y() - point().y()) * N1.y();
 
   // Calculate lambda.
   T lambda = P1P0_dot_N1 / D0_dot_N1;
 
   // Return intersection point.
-  return {point_().x() + lambda * direction_().x(), point_().y() + lambda * direction_().y()};
+  return {point().x() + lambda * direction().x(), point().y() + lambda * direction().y()};
 }
 
 #ifdef CWDEBUG
