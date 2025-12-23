@@ -191,6 +191,20 @@ class Direction :
   using DirectionData<N, T>::DirectionData;
 };
 
+// Implicit class template argument deduction guides are not generated from inherited constructors (DirectionData),
+// therefore we have to add explicit deduction guides back for Direction.
+template<int N, class T>
+Direction(Point<N, T> const&, Point<N, T> const&) -> Direction<N, T>;
+
+template<int N, class T>
+Direction(Point<N, T> const&) -> Direction<N, T>;
+
+template<int N, class T>
+Direction(LinePiece<N, T> const&) -> Direction<N, T>;
+
+template<int N, class T>
+Direction(Line<N, T> const& line) -> Direction<N, T>;
+
 } // namespace math
 
 #endif // MATH_DIRECTION_H
