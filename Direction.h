@@ -21,9 +21,7 @@ class LinePiece;
 template<int N, typename T>
 class Line;
 
-template<int N, typename T>
-class Direction;
-
+// Friend of DirectionData.
 template<typename DerivedTypes>
 struct DirectionOps;
 
@@ -117,6 +115,10 @@ struct DirectionOps
   static derived_type const& right;
 };
 
+// Forward declaration, required for DirectionTypes<N, T>::derived_type.
+template<int N, typename T>
+class Direction;
+
 //static
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type const& DirectionOps<DerivedTypes>::up = reinterpret_cast<derived_type const&>(Direction<derived_n, derived_scalar_type>::up);
@@ -132,10 +134,6 @@ typename DerivedTypes::derived_type const& DirectionOps<DerivedTypes>::left = re
 //static
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type const& DirectionOps<DerivedTypes>::right = reinterpret_cast<derived_type const&>(Direction<derived_n, derived_scalar_type>::right);
-
-// Forward declaration, required for DirectionTypes<N, T>::derived_type.
-template<int N, typename T>
-class Direction;
 
 template<int N, typename T>
 struct DirectionTypes
