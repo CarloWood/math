@@ -91,7 +91,7 @@ class kFaceIndex : public utils::VectorIndex<kFaceData<n, k>>
   // Construct a zero-corner by inserting zeroes into `fixed_bits` at the positions of `k_axes`.
   kFaceIndex(axes_type k_axes, uint32_t fixed_bits) requires (k == 0) : utils::VectorIndex<kFaceData<n, k>>(fixed_bits) { insert_bits(k_axes); }
 
-  std::array<kFaceIndex<n, k - 1>, number_of_facets> facet_indexes() requires (k > 0);
+  std::array<kFaceIndex<n, k - 1>, number_of_facets> facet_indexes() const requires (k > 0);
 
   kFace<n, k> as_kface() const;
 
@@ -169,7 +169,7 @@ kFace<n, k> kFaceIndex<n, k>::as_kface() const
 
 template<int n, int k>
 std::array<kFaceIndex<n, k - 1>, kFaceIndex<n, k>::number_of_facets>
-kFaceIndex<n, k>::facet_indexes() requires (k > 0)
+kFaceIndex<n, k>::facet_indexes() const requires (k > 0)
 {
   std::array<kFaceIndex<n, k - 1>, kFaceIndex<n, k>::number_of_facets> result;
 
