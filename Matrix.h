@@ -245,16 +245,21 @@ class Matrix :
   using MatrixData<N, M, T>::operator=;
 };
 
-template<int N, int M, typename T>
-Vector<M, T> operator*(Vector<N, T> const& v, Matrix<N, M, T> const& m)
+//-----------------------------------------------------------------------------
+// Free function binary operators.
+//
+
+template<typename DerivedTypes>
+typename DerivedTypes::template vector_type<DerivedTypes::cols>
+operator*(typename DerivedTypes::template vector_type<DerivedTypes::rows> const& v, MatrixOps<DerivedTypes> const& m)
 {
-  return {v.eigen().transpose() * m.eigen()};
+  return {v.eigen().transpose() * static_cast<DerivedTypes::derived_type const&>(m).eigen_()};
 }
 
-template<int N, int M, typename T>
-Matrix<N, M, T> operator*(T scalar, Matrix<N, M, T> const& m)
+template<typename DerivedTypes>
+typename DerivedTypes::derived_type operator*(typename DerivedTypes::scalar_type scalar, MatrixOps<DerivedTypes> const& m)
 {
-  return {scalar * m.eigen()};
+  return {scalar * static_cast<DerivedTypes::derived_type const&>(m).eigen_()};
 }
 
 #ifdef CWDEBUG
