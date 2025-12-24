@@ -84,10 +84,10 @@ struct MatrixOps
   bool isnan() const { return raw_().isnan(); }
   bool isfinite() const { return raw_().isfinite(); }
 
-  derived_type& operator+=(derived_type const& m2) { return static_cast<derived_type&>(raw_().operator+=(m2.raw())); }
-  derived_type& operator-=(derived_type const& m2) { return static_cast<derived_type&>(raw_().operator-=(m2.raw())); }
-  derived_type& operator*=(derived_scalar_type scalar) { return static_cast<derived_type&>(raw_().operator*=(scalar)); }
-  derived_type& operator/=(derived_scalar_type scalar) { return static_cast<derived_type&>(raw_().operator/=(scalar)); }
+  derived_type& operator+=(derived_type const& m2) { raw_().operator+=(m2.raw()); return static_cast<derived_type&>(*this); }
+  derived_type& operator-=(derived_type const& m2) { raw_().operator-=(m2.raw()); return static_cast<derived_type&>(*this); }
+  derived_type& operator*=(derived_scalar_type scalar) { raw_().operator*=(scalar); return static_cast<derived_type&>(*this); }
+  derived_type& operator/=(derived_scalar_type scalar) { raw_().operator/=(scalar); return static_cast<derived_type&>(*this); }
 
   template<int P>
   derived_matrix_type<derived_rows, P> operator*(derived_matrix_type<derived_cols, P> const& m2) const

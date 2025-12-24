@@ -144,10 +144,10 @@ struct VectorOps
   derived_type rotate_180_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotate_180_degrees()); }
   derived_type rotate_270_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotate_270_degrees()); }
 
-  derived_type& operator+=(derived_type const& v2) { return static_cast<derived_type&>(raw_().operator+=(v2.raw())); }
-  derived_type& operator-=(derived_type const& v2) { return static_cast<derived_type&>(raw_().operator-=(v2.raw())); }
-  derived_type& operator*=(derived_scalar_type scalar) { return static_cast<derived_type&>(raw_().operator*=(scalar)); }
-  derived_type& operator/=(derived_scalar_type scalar) { return static_cast<derived_type&>(raw_().operator/=(scalar)); }
+  derived_type& operator+=(derived_type const& v2) { raw_().operator+=(v2.raw()); return static_cast<derived_type&>(*this); }
+  derived_type& operator-=(derived_type const& v2) { raw_().operator-=(v2.raw()); return static_cast<derived_type&>(*this); }
+  derived_type& operator*=(derived_scalar_type scalar) { raw_().operator*=(scalar); return static_cast<derived_type&>(*this); }
+  derived_type& operator/=(derived_scalar_type scalar) { raw_().operator/=(scalar); return static_cast<derived_type&>(*this); }
 
   void negate() { raw_().negate(); }
   derived_type operator-() const { return static_cast<derived_type>(raw_().operator-()); }

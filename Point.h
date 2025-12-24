@@ -171,19 +171,22 @@ typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename D
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::direction_type const& direction)
 {
-  return static_cast<derived_type&>(raw_().operator+=(direction.raw()));
+  raw_().operator+=(direction.raw());
+  return static_cast<derived_type&>(*this);
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type&>(raw_().operator+=(v.raw()));
+  raw_().operator+=(v.raw());
+  return static_cast<derived_type&>(*this);
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator-=(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type&>(raw_().operator-=(v.raw()));
+  raw_().operator-=(v.raw());
+  return static_cast<derived_type&>(*this);
 }
 
 // Specialization of the Point binary operators specifically for math::Point itself.
