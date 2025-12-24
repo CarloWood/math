@@ -31,7 +31,7 @@ class MatrixData
   MatrixData() = default;
 
   // Construct the Matrix `k I`.
-  MatrixData(T k = T{1}) requires (N == M)
+  explicit MatrixData(T k) requires (N == M)
   {
     m_.setIdentity();
     if (k != T{1})
