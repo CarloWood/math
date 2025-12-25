@@ -250,16 +250,30 @@ class Matrix :
 //
 
 template<typename DerivedTypes>
-typename DerivedTypes::template vector_type<DerivedTypes::cols>
+DerivedTypes::template vector_type<DerivedTypes::cols>
 operator*(typename DerivedTypes::template vector_type<DerivedTypes::rows> const& v, MatrixOps<DerivedTypes> const& m)
 {
-  return {v.eigen().transpose() * static_cast<DerivedTypes::derived_type const&>(m).eigen_()};
+  return static_cast<DerivedTypes::template vector_type<DerivedTypes::cols>>(v.raw() * static_cast<DerivedTypes::derived_type const&>(m).raw());
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type operator*(typename DerivedTypes::scalar_type scalar, MatrixOps<DerivedTypes> const& m)
 {
-  return {scalar * static_cast<DerivedTypes::derived_type const&>(m).eigen_()};
+  return static_cast<DerivedTypes::derived_type>(scalar * static_cast<DerivedTypes::derived_type const&>(m).raw());
+}
+
+// Specialization of the free function binary operators.
+
+template<int N, int M, typename T>
+Vector<M, T> operator*(Vector<N, T> const& v, Matrix<N, M, T> const& m)
+{
+  return {v.eigen().transpose() * m.eigen()};
+}
+
+template<int N, int M, typename T>
+Matrix<N, M, T> operator*(T scalar, MatrixOps<MatrixTypes<N, M, T>> const& m)
+{
+  return {scalar * static_cast<Matrix<N, M, T> const&>(m).eigen()};
 }
 
 #ifdef CWDEBUG
