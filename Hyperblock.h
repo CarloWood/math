@@ -82,6 +82,17 @@ class IntersectionPoint
   T const& coordinate(int i) const { return vector_[i]; }
 };
 
+#ifdef CWDEBUG
+template<int n, std::floating_point T>
+std::ostream& operator<<(std::ostream& os, IntersectionPoint<n, T> const& ip)
+{
+  os << '{';
+  os << "vector:" << static_cast<typename IntersectionPoint<n, T>::vector_type const&>(ip) <<
+      ", ei:" << ip.edge_index() << '}';
+  return os;
+}
+#endif
+
 } // namespace detail
 
 template<int n , std::floating_point T = double>

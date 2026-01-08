@@ -67,9 +67,9 @@ struct PointOps
   derived_scalar_type& z()      { return raw_().z(); }
   derived_scalar_type z() const { return raw_().z(); }
 
-  inline derived_type operator+(typename DerivedTypes::direction_type const& direction);
-  inline derived_type operator+(typename DerivedTypes::vector_type const& v);
-  inline derived_type operator-(typename DerivedTypes::vector_type const& v);
+  inline derived_type operator+(typename DerivedTypes::direction_type const& direction) const;
+  inline derived_type operator+(typename DerivedTypes::vector_type const& v) const;
+  inline derived_type operator-(typename DerivedTypes::vector_type const& v) const;
   inline derived_type& operator+=(typename DerivedTypes::direction_type const& direction);
   inline derived_type& operator+=(typename DerivedTypes::vector_type const& v);
   inline derived_type& operator-=(typename DerivedTypes::vector_type const& v);
@@ -111,13 +111,15 @@ struct PointOps<PointTypes<N, T>>
   T z() const { static_assert(N >= 3); return eigen_()[2]; }
 
   // Add a direction.
-  inline Point<N, T> operator+(Direction<N, T> const& direction);
+  inline Point<N, T> operator+(Direction<N, T> const& direction) const;
   inline Point<N, T>& operator+=(Direction<N, T> const& direction);
 
-  // Add or subtract a vector.
-  inline Point<N, T> operator+(Vector<N, T> const& v);
-  inline Point<N, T> operator-(Vector<N, T> const& v);
+  // Add a vector.
+  inline Point<N, T> operator+(Vector<N, T> const& v) const;
   inline Point<N, T>& operator+=(Vector<N, T> const& v);
+
+  // Subtract a vector.
+  inline Point<N, T> operator-(Vector<N, T> const& v) const;
   inline Point<N, T>& operator-=(Vector<N, T> const& v);
 };
 
@@ -149,19 +151,19 @@ class Point :
 namespace math {
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::direction_type const& direction)
+typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::direction_type const& direction) const
 {
   return static_cast<derived_type>(raw_().operator+(direction.raw()));
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::vector_type const& v)
+typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::vector_type const& v) const
 {
   return static_cast<derived_type>(raw_().operator+(v.raw()));
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename DerivedTypes::vector_type const& v)
+typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename DerivedTypes::vector_type const& v) const
 {
   return static_cast<derived_type>(raw_().operator-(v.raw()));
 }
@@ -169,37 +171,40 @@ typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename D
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::direction_type const& direction)
 {
-  return static_cast<derived_type&>(raw_().operator+=(direction.raw()));
+  raw_().operator+=(direction.raw());
+  return static_cast<derived_type&>(*this);
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type&>(raw_().operator+=(v.raw()));
+  raw_().operator+=(v.raw());
+  return static_cast<derived_type&>(*this);
 }
 
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator-=(typename DerivedTypes::vector_type const& v)
 {
-  return static_cast<derived_type&>(raw_().operator-=(v.raw()));
+  raw_().operator-=(v.raw());
+  return static_cast<derived_type&>(*this);
 }
 
 // Specialization of the Point binary operators specifically for math::Point itself.
 
 template<int N, typename T>
-Point<N, T> PointOps<PointTypes<N, T>>::operator+(Direction<N, T> const& direction)
+Point<N, T> PointOps<PointTypes<N, T>>::operator+(Direction<N, T> const& direction) const
 {
   return {eigen_() + direction.eigen()};
 }
 
 template<int N, typename T>
-Point<N, T> PointOps<PointTypes<N, T>>::operator+(Vector<N, T> const& v)
+Point<N, T> PointOps<PointTypes<N, T>>::operator+(Vector<N, T> const& v) const
 {
   return {eigen_() + v.eigen()};
 }
 
 template<int N, typename T>
-Point<N, T> PointOps<PointTypes<N, T>>::operator-(Vector<N, T> const& v)
+Point<N, T> PointOps<PointTypes<N, T>>::operator-(Vector<N, T> const& v) const
 {
   return {eigen_() - v.eigen()};
 }

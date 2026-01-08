@@ -6,48 +6,117 @@
 
 namespace math {
 
-template<int N, typename T = double>
-class Line
+// Friend of LineData.
+template<typename DerivedTypes>
+struct LineOps;
+
+template<int N, typename T>
+class LineData
 {
  public:
   using point_type = Point<N, T>;
   using direction_type = Direction<N, T>;
 
  protected:
+  template<typename DerivedTypes>
+  friend struct LineOps;
+
   point_type point_;
   direction_type direction_;
 
  public:
-  // Construct an undefined line.
-  Line() = default;
+  // Construct an uninitialized line.
+  LineData() = default;
+
   // Construct a line through point with direction.
-  Line(point_type const& point, direction_type const& direction) : point_(point), direction_(direction) { }
-
-  point_type const& point() const { return point_; }
-  direction_type const& direction() const { return direction_; }
-
-  operator direction_type const&() const { return direction_; }
-
-  point_type intersection_with(Line const& line2) const requires (N == 2);
+  LineData(point_type const& point, direction_type const& direction) : point_(point), direction_(direction) { }
 
 #ifdef CWDEBUG
   void print_on(std::ostream& os) const;
 #endif
 };
 
+template<typename DerivedTypes>
+struct LineOps
+{
+ private:
+  static constexpr int derived_n = DerivedTypes::n;
+  using derived_type           = typename DerivedTypes::derived_type;
+  using derived_point_type     = typename DerivedTypes::point_type;
+  using derived_direction_type = typename DerivedTypes::direction_type;
+
+  auto& raw_() { return static_cast<derived_type*>(this)->raw(); }
+  auto const& raw_() const { return static_cast<derived_type const*>(this)->raw(); }
+
+ public:
+  derived_point_type const& point() const { return raw_().point(); }
+  derived_direction_type const& direction() const { return raw_().direction(); }
+
+  operator derived_direction_type const&() const { return direction(); }
+
+  derived_point_type intersection_with(derived_type const& line2) const requires (derived_n == 2)
+  {
+    return static_cast<derived_point_type>(raw_().intersection_with(line2.raw()));
+  }
+};
+
+// Forward declaration, required for LineTypes<N, T>::derived_type.
 template<int N, typename T>
-Point<N, T> Line<N, T>::intersection_with(Line const& L1) const requires (N == 2)
+class Line;
+
+template<int N, typename T>
+struct LineTypes
+{
+  static constexpr int n = N;
+  using scalar_type    = T;
+  using derived_type   = Line<N, T>;
+  using point_type     = Point<N, T>;
+  using direction_type = Direction<N, T>;
+};
+
+// Specialization of Line operations specifically for math::Line itself.
+template<int N, typename T>
+struct LineOps<LineTypes<N, T>>
+{
+ public:
+  // Accessors.
+  Point<N, T> const& point() const { return static_cast<Line<N, T> const*>(this)->point_; }
+  Direction<N, T> const& direction() const { return static_cast<Line<N, T> const*>(this)->direction_; }
+
+  // It is allowed to pass a Line to a function that takes a Direction.
+  operator Direction<N, T> const&() const { return direction(); }
+
+  // Return the intersection with another Line.
+  Point<N, T> intersection_with(Line<N, T> const& line2) const requires (N == 2);
+};
+
+template<int N, typename T = double>
+class Line :
+  public LineData<N, T>,               // Wraps stored point and direction and defines constructors.
+  public LineOps<LineTypes<N, T>>      // Defines possible operations on the Line (uses the above specialization).
+{
+ public:
+  using LineData<N, T>::LineData;
+};
+
+// Implicit class template argument deduction guides are not generated from inherited constructors (LineData),
+// therefore we have to add explicit deduction guides back for Line.
+template<int N, class T>
+Line(Point<N, T> const&, Direction<N, T> const&) -> Line<N, T>;
+
+template<int N, typename T>
+Point<N, T> LineOps<LineTypes<N, T>>::intersection_with(Line<N, T> const& L1) const requires (N == 2)
 {
   // Line0: P0 + λ D0
   // Line1: P1 + ξ D1
 
-  point_type const& P0 = point_;
-  direction_type const& D0 = direction_;
-  point_type const& P1 = L1.point();
-  direction_type const& D1 = L1.direction();
+  Point<N, T> const& P0 = point();
+  Direction<N, T> const& D0 = direction();
+  Point<N, T> const& P1 = L1.point();
+  Direction<N, T> const& D1 = L1.direction();
 
   // Let N1 be D1 rotated counter-clockwise by PI/2 (this is floating-point round off error free).
-  direction_type N1 = D1.normal();
+  Direction<N, T> N1 = D1.normal();
 
   // Take dot product of D0 with N1:
   T D0_dot_N1 = D0.dot(N1);
@@ -75,18 +144,18 @@ Point<N, T> Line<N, T>::intersection_with(Line const& L1) const requires (N == 2
   // Note, in the above picture: a = -(P1 - P0)·N1, and b = -D0·N1
 
   // Take dot product of P1-P0 with N1:
-  T P1P0_dot_N1 = (L1.point().x() - point_.x()) * N1.x() + (L1.point().y() - point_.y()) * N1.y();
+  T P1P0_dot_N1 = (L1.point().x() - point().x()) * N1.x() + (L1.point().y() - point().y()) * N1.y();
 
   // Calculate lambda.
   T lambda = P1P0_dot_N1 / D0_dot_N1;
 
   // Return intersection point.
-  return {point_.x() + lambda * direction_.x(), point_.y() + lambda * direction_.y()};
+  return {point().x() + lambda * direction().x(), point().y() + lambda * direction().y()};
 }
 
 #ifdef CWDEBUG
 template<int N, typename T>
-void Line<N, T>::print_on(std::ostream& os) const
+void LineData<N, T>::print_on(std::ostream& os) const
 {
   os << "{point:" << point_ << ", direction:" << direction_ << "}";
 }

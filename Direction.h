@@ -1,6 +1,8 @@
 #ifndef MATH_DIRECTION_H
 #define MATH_DIRECTION_H
 
+#include "Point.h"
+#include <Eigen/Core>
 #include <cmath>
 #include <limits>
 #ifdef CWDEBUG
@@ -19,9 +21,7 @@ class LinePiece;
 template<int N, typename T>
 class Line;
 
-template<int N, typename T>
-class Direction;
-
+// Friend of DirectionData.
 template<typename DerivedTypes>
 struct DirectionOps;
 
@@ -115,6 +115,10 @@ struct DirectionOps
   static derived_type const& right;
 };
 
+// Forward declaration, required for DirectionTypes<N, T>::derived_type.
+template<int N, typename T>
+class Direction;
+
 //static
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type const& DirectionOps<DerivedTypes>::up = reinterpret_cast<derived_type const&>(Direction<derived_n, derived_scalar_type>::up);
@@ -130,10 +134,6 @@ typename DerivedTypes::derived_type const& DirectionOps<DerivedTypes>::left = re
 //static
 template<typename DerivedTypes>
 typename DerivedTypes::derived_type const& DirectionOps<DerivedTypes>::right = reinterpret_cast<derived_type const&>(Direction<derived_n, derived_scalar_type>::right);
-
-// Forward declaration, required for DirectionTypes<N, T>::derived_type.
-template<int N, typename T>
-class Direction;
 
 template<int N, typename T>
 struct DirectionTypes
@@ -188,6 +188,20 @@ class Direction :
  public:
   using DirectionData<N, T>::DirectionData;
 };
+
+// Implicit class template argument deduction guides are not generated from inherited constructors (DirectionData),
+// therefore we have to add explicit deduction guides back for Direction.
+template<int N, class T>
+Direction(Point<N, T> const&, Point<N, T> const&) -> Direction<N, T>;
+
+template<int N, class T>
+Direction(Point<N, T> const&) -> Direction<N, T>;
+
+template<int N, class T>
+Direction(LinePiece<N, T> const&) -> Direction<N, T>;
+
+template<int N, class T>
+Direction(Line<N, T> const& line) -> Direction<N, T>;
 
 } // namespace math
 
