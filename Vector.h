@@ -152,6 +152,10 @@ struct VectorOps
   void negate() { raw_().negate(); }
   derived_type operator-() const { return static_cast<derived_type>(raw_().operator-()); }
   derived_type operator/(double scalar) const { return static_cast<derived_type>(raw_().operator/(scalar)); }
+
+  friend derived_type operator*(double length, VectorOps const& v2) { return length * v2.raw_(); }
+  friend derived_type operator+(VectorOps const& v1, VectorOps const& v2) { return {v1.raw_() + v2.raw_()}; }
+  friend derived_type operator-(VectorOps const& v1, VectorOps const& v2) { return {v1.raw_() - v2.raw_()}; }
 };
 
 template<int N, typename T>
@@ -159,9 +163,9 @@ struct VectorTypes
 {
   static constexpr int n = N;
   using scalar_type    = T;
-  using derived_type   = Vector<N, T>;
   using point_type     = Point<N, T>;
   using direction_type = Direction<N, T>;
+  using derived_type   = Vector<N, T>;
 };
 
 // Specialization of the Vector operators specifically for math::Vector itself.
@@ -280,6 +284,11 @@ struct VectorOps<VectorTypes<N, T>>
 
   // Divide by a scalar.
   Vector<N, T> operator/(double scalar) const { return {eigen_() / scalar}; }
+
+  // Binary operators.
+  friend Vector<N, T> operator*(double length, VectorOps const& v2) { return {length * v2.eigen_()}; }
+  friend Vector<N, T> operator+(VectorOps const& v1, VectorOps const& v2) { return {v1.eigen_() + v2.eigen_()}; }
+  friend Vector<N, T> operator-(VectorOps const& v1, VectorOps const& v2) { return {v1.eigen_() - v2.eigen_()}; }
 };
 
 template<int N, typename T = double>
@@ -307,36 +316,6 @@ Vector(Point<N, T> const&) -> Vector<N, T>;
 
 template<int N, class T>
 Vector(LinePiece<N, T> const&) -> Vector<N, T>;
-
-template<int N, typename T>
-Vector<N, T> operator*(double length, Vector<N, T> const& v2)
-{
-  return {length * v2.eigen()};
-}
-
-template<int N, typename T>
-Point<N, T> operator+(Point<N, T> const& point, Vector<N, T> const& v2)
-{
-  return {point.eigen() + v2.eigen()};
-}
-
-template<int N, typename T>
-Point<N, T>operator-(Point<N, T> const& point, Vector<N, T> const& v2)
-{
-  return {point.eigen() - v2.eigen()};
-}
-
-template<int N, typename T>
-Vector<N, T> operator+(Vector<N, T> const& v1, Vector<N, T> const& v2)
-{
-  return {v1.eigen() + v2.eigen()};
-}
-
-template<int N, typename T>
-Vector<N, T> operator-(Vector<N, T> const& v1, Vector<N, T> const& v2)
-{
-  return {v1.eigen() - v2.eigen()};
-}
 
 } // namespace math
 

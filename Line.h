@@ -49,8 +49,8 @@ struct LineOps
   auto const& raw_() const { return static_cast<derived_type const*>(this)->raw(); }
 
  public:
-  derived_point_type const& point() const { return raw_().point(); }
-  derived_direction_type const& direction() const { return raw_().direction(); }
+  derived_point_type point() const { return derived_point_type{raw_().point()}; }
+  derived_direction_type direction() const { return derived_direction_type{raw_().direction()}; }
 
   operator derived_direction_type const&() const { return direction(); }
 

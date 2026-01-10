@@ -68,10 +68,12 @@ struct PointOps
   derived_scalar_type z() const { return raw_().z(); }
 
   inline derived_type operator+(typename DerivedTypes::direction_type const& direction) const;
-  inline derived_type operator+(typename DerivedTypes::vector_type const& v) const;
-  inline derived_type operator-(typename DerivedTypes::vector_type const& v) const;
   inline derived_type& operator+=(typename DerivedTypes::direction_type const& direction);
+
+  inline derived_type operator+(typename DerivedTypes::vector_type const& v) const;
   inline derived_type& operator+=(typename DerivedTypes::vector_type const& v);
+
+  inline derived_type operator-(typename DerivedTypes::vector_type const& v) const;
   inline derived_type& operator-=(typename DerivedTypes::vector_type const& v);
 };
 
@@ -157,18 +159,6 @@ typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename D
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::vector_type const& v) const
-{
-  return static_cast<derived_type>(raw_().operator+(v.raw()));
-}
-
-template<typename DerivedTypes>
-typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename DerivedTypes::vector_type const& v) const
-{
-  return static_cast<derived_type>(raw_().operator-(v.raw()));
-}
-
-template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::direction_type const& direction)
 {
   raw_().operator+=(direction.raw());
@@ -176,10 +166,22 @@ typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename
 }
 
 template<typename DerivedTypes>
+typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator+(typename DerivedTypes::vector_type const& v) const
+{
+  return static_cast<derived_type>(raw_().operator+(v.raw()));
+}
+
+template<typename DerivedTypes>
 typename DerivedTypes::derived_type& PointOps<DerivedTypes>::operator+=(typename DerivedTypes::vector_type const& v)
 {
   raw_().operator+=(v.raw());
   return static_cast<derived_type&>(*this);
+}
+
+template<typename DerivedTypes>
+typename DerivedTypes::derived_type PointOps<DerivedTypes>::operator-(typename DerivedTypes::vector_type const& v) const
+{
+  return static_cast<derived_type>(raw_().operator-(v.raw()));
 }
 
 template<typename DerivedTypes>
@@ -198,18 +200,6 @@ Point<N, T> PointOps<PointTypes<N, T>>::operator+(Direction<N, T> const& directi
 }
 
 template<int N, typename T>
-Point<N, T> PointOps<PointTypes<N, T>>::operator+(Vector<N, T> const& v) const
-{
-  return {eigen_() + v.eigen()};
-}
-
-template<int N, typename T>
-Point<N, T> PointOps<PointTypes<N, T>>::operator-(Vector<N, T> const& v) const
-{
-  return {eigen_() - v.eigen()};
-}
-
-template<int N, typename T>
 Point<N, T>& PointOps<PointTypes<N, T>>::operator+=(Direction<N, T> const& direction)
 {
   eigen_() += direction.eigen();
@@ -217,10 +207,22 @@ Point<N, T>& PointOps<PointTypes<N, T>>::operator+=(Direction<N, T> const& direc
 }
 
 template<int N, typename T>
+Point<N, T> PointOps<PointTypes<N, T>>::operator+(Vector<N, T> const& v) const
+{
+  return {eigen_() + v.eigen()};
+}
+
+template<int N, typename T>
 Point<N, T>& PointOps<PointTypes<N, T>>::operator+=(Vector<N, T> const& v)
 {
   eigen_() += v.eigen();
   return static_cast<Point<N, T>&>(*this);
+}
+
+template<int N, typename T>
+Point<N, T> PointOps<PointTypes<N, T>>::operator-(Vector<N, T> const& v) const
+{
+  return {eigen_() - v.eigen()};
 }
 
 template<int N, typename T>

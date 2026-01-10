@@ -28,7 +28,10 @@ class LinePieceData
   friend struct LinePieceOps;
 
  public:
+  // Construct an uninitialized line.
   LinePieceData() = default;
+
+  // Construct a LinePiece from two points.
   LinePieceData(point_type const& from, point_type const& to) : from_(from), to_(to) { }
 
 #ifdef CWDEBUG
