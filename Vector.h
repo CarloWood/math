@@ -153,9 +153,9 @@ struct VectorOps
   derived_type operator-() const { return static_cast<derived_type>(raw_().operator-()); }
   derived_type operator/(double scalar) const { return static_cast<derived_type>(raw_().operator/(scalar)); }
 
-  friend derived_type operator*(double length, VectorOps const& v2) { return length * v2.raw_(); }
-  friend derived_type operator+(VectorOps const& v1, VectorOps const& v2) { return {v1.raw_() + v2.raw_()}; }
-  friend derived_type operator-(VectorOps const& v1, VectorOps const& v2) { return {v1.raw_() - v2.raw_()}; }
+  friend derived_type operator*(double length, VectorOps const& v2) { return derived_type{length * v2.raw_()}; }
+  friend derived_type operator+(VectorOps const& v1, VectorOps const& v2) { return derived_type{v1.raw_() + v2.raw_()}; }
+  friend derived_type operator-(VectorOps const& v1, VectorOps const& v2) { return derived_type{v1.raw_() - v2.raw_()}; }
 };
 
 template<int N, typename T>

@@ -68,7 +68,7 @@ class DirectionData
   eigen_type const& eigen() const { return d_; }
 
  protected:
-  // For normal() and inverse().
+  // For normal() and negate().
   template<typename DerivedTypes>
   friend struct DirectionOps;
   template<typename... U>
@@ -91,6 +91,7 @@ struct DirectionOps
  private:
   static constexpr int derived_n = DerivedTypes::n;
   using derived_scalar_type    = typename DerivedTypes::scalar_type;
+  using derived_vector_type    = typename DerivedTypes::vector_type;
   using derived_type           = typename DerivedTypes::derived_type;
 
   auto& raw_() { return static_cast<derived_type*>(this)->raw(); }
@@ -105,14 +106,18 @@ struct DirectionOps
   inline derived_scalar_type dot(derived_type const& d2) const;
   inline derived_scalar_type as_angle(int x = 0, int y = 1) const;
 
-  inline derived_type normal() const;
-  inline derived_type inverse() const;
-  inline derived_type normal_inverse() const;
+  //FIXME: shouldn't these be names like the others (rotate_*_degrees)?
+  inline derived_type normal() const requires (derived_n == 2);
+  inline derived_type negate() const;
+  inline derived_type normal_negate() const requires (derived_n == 2);
 
   static derived_type const& up;
   static derived_type const& down;
   static derived_type const& left;
   static derived_type const& right;
+
+  derived_type operator-() const { return static_cast<derived_type>(raw_().operator-()); }
+  friend derived_vector_type operator*(double length, DirectionOps const& v2) { return derived_vector_type{length * v2.raw_()}; }
 };
 
 // Forward declaration, required for DirectionTypes<N, T>::derived_type.
@@ -140,6 +145,7 @@ struct DirectionTypes
 {
   static constexpr int n = N;
   using scalar_type    = T;
+  using vector_type    = Vector<N, T>;
   using derived_type   = Direction<N, T>;
 };
 
@@ -167,17 +173,20 @@ struct DirectionOps<DirectionTypes<N, T>>
   // Return the direction rotated 90 degrees counter-clockwise.
   inline Direction<N, T> normal() const requires (N == 2);
 
-  // Return the inverse of the direction (aka rotated 180 degrees if N=2).
-  inline Direction<N, T> inverse() const;
+  // Return the negation of the direction (aka rotated 180 degrees if N=2).
+  inline Direction<N, T> negate() const;
 
   // Return the direction rotated 270 degrees.
-  inline Direction<N, T> normal_inverse() const requires (N == 2);
+  inline Direction<N, T> normal_negate() const requires (N == 2);
 
   // A few convenience directions.
   static Direction<N, T> const up;
   static Direction<N, T> const down;
   static Direction<N, T> const left;
   static Direction<N, T> const right;
+
+  Direction<N, T> operator-() const { return static_cast<Direction<N, T>>(eigen_().operator-()); }
+  friend Vector<N, T> operator*(double length, Direction<N, T> const& d2) { return {d2, length}; }
 };
 
 template<int N, typename T = double>
@@ -233,21 +242,21 @@ typename DerivedTypes::scalar_type DirectionOps<DerivedTypes>::as_angle(int x, i
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::normal() const
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::normal() const requires (derived_n == 2)
 {
   return static_cast<derived_type>(raw_().normal());
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::inverse() const
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::negate() const
 {
-  return static_cast<derived_type>(raw_().inverse());
+  return static_cast<derived_type>(raw_().negate());
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::normal_inverse() const
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::normal_negate() const requires (derived_n == 2)
 {
-  return static_cast<derived_type>(raw_().normal_inverse());
+  return static_cast<derived_type>(raw_().normal_negate());
 }
 
 // Specialization of the Direction operators specifically for math::Direction itself.
@@ -282,13 +291,13 @@ Direction<N, T> DirectionOps<DirectionTypes<N, T>>::normal() const requires (N =
 }
 
 template<int N, typename T>
-Direction<N, T> DirectionOps<DirectionTypes<N, T>>::inverse() const
+Direction<N, T> DirectionOps<DirectionTypes<N, T>>::negate() const
 {
   return {-eigen_()};
 }
 
 template<int N, typename T>
-Direction<N, T> DirectionOps<DirectionTypes<N, T>>::normal_inverse() const requires (N == 2)
+Direction<N, T> DirectionOps<DirectionTypes<N, T>>::normal_negate() const requires (N == 2)
 {
   return { y(), -x() };
 }
