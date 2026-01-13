@@ -116,7 +116,7 @@ Point<N, T> LineOps<LineTypes<N, T>>::intersection_with(Line<N, T> const& L1) co
   Direction<N, T> const& D1 = L1.direction();
 
   // Let N1 be D1 rotated counter-clockwise by PI/2 (this is floating-point round off error free).
-  Direction<N, T> N1 = D1.rotate_90_degrees();
+  Direction<N, T> N1 = D1.rotated_90_degrees();
 
   // Take dot product of D0 with N1:
   T D0_dot_N1 = D0.dot(N1);

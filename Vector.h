@@ -140,9 +140,9 @@ struct VectorOps
   bool isfinite() const { return raw_().isfinite(); }
   bool normalize() { return raw_().normalize(); }
 
-  derived_type rotate_90_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotate_90_degrees()); }
-  derived_type rotate_180_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotate_180_degrees()); }
-  derived_type rotate_270_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotate_270_degrees()); }
+  derived_type rotated_90_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotated_90_degrees()); }
+  derived_type rotated_180_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotated_180_degrees()); }
+  derived_type rotated_270_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotated_270_degrees()); }
 
   derived_type& operator+=(derived_type const& v2) { raw_().operator+=(v2.raw()); return static_cast<derived_type&>(*this); }
   derived_type& operator-=(derived_type const& v2) { raw_().operator-=(v2.raw()); return static_cast<derived_type&>(*this); }
@@ -240,13 +240,13 @@ struct VectorOps<VectorTypes<N, T>>
   }
 
   // Return the vector rotated 90 degrees counter-clockwise.
-  Vector<N, T> rotate_90_degrees() const requires (N == 2) { return { -y(), x() }; }
+  Vector<N, T> rotated_90_degrees() const requires (N == 2) { return { -y(), x() }; }
 
   // Return the vector rotated 180 degrees.
-  Vector<N, T> rotate_180_degrees() const requires (N == 2) { return { -x(), -y() }; }
+  Vector<N, T> rotated_180_degrees() const requires (N == 2) { return { -x(), -y() }; }
 
   // Return the vector rotated 270 degrees.
-  Vector<N, T> rotate_270_degrees() const requires (N == 2) { return { y(), -x() }; }
+  Vector<N, T> rotated_270_degrees() const requires (N == 2) { return { y(), -x() }; }
 
   // Add another vector.
   Vector<N, T>& operator+=(Vector<N, T> const& v2)

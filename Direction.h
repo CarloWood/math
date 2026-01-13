@@ -68,7 +68,7 @@ class DirectionData
   eigen_type const& eigen() const { return d_; }
 
  protected:
-  // For rotate_*_degrees().
+  // For rotated_*_degrees().
   template<typename DerivedTypes>
   friend struct DirectionOps;
   template<typename... U>
@@ -106,9 +106,9 @@ struct DirectionOps
   inline derived_scalar_type dot(derived_type const& d2) const;
   inline derived_scalar_type as_angle(int x = 0, int y = 1) const;
 
-  inline derived_type rotate_90_degrees() const requires (derived_n == 2);
-  inline derived_type rotate_180_degrees() const requires (derived_n == 2);
-  inline derived_type rotate_270_degrees() const requires (derived_n == 2);
+  inline derived_type rotated_90_degrees() const requires (derived_n == 2);
+  inline derived_type rotated_180_degrees() const requires (derived_n == 2);
+  inline derived_type rotated_270_degrees() const requires (derived_n == 2);
 
   inline void negate();
 
@@ -172,13 +172,13 @@ struct DirectionOps<DirectionTypes<N, T>>
   inline T as_angle(int x = 0, int y = 1) const requires (N >= 2);
 
   // Return the direction rotated 90 degrees counter-clockwise.
-  inline Direction<N, T> rotate_90_degrees() const requires (N == 2);
+  inline Direction<N, T> rotated_90_degrees() const requires (N == 2);
 
   // Return the direction rotated 180 degrees.
-  inline Direction<N, T> rotate_180_degrees() const requires (N == 2);
+  inline Direction<N, T> rotated_180_degrees() const requires (N == 2);
 
   // Return the direction rotated 270 degrees.
-  inline Direction<N, T> rotate_270_degrees() const requires (N == 2);
+  inline Direction<N, T> rotated_270_degrees() const requires (N == 2);
 
   // Negate this Direction (aka rotate 180 degrees, if N=2).
   inline void negate();
@@ -246,21 +246,21 @@ typename DerivedTypes::scalar_type DirectionOps<DerivedTypes>::as_angle(int x, i
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::rotate_90_degrees() const requires (derived_n == 2)
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::rotated_90_degrees() const requires (derived_n == 2)
 {
-  return static_cast<derived_type>(raw_().rotate_90_degrees());
+  return static_cast<derived_type>(raw_().rotated_90_degrees());
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::rotate_180_degrees() const requires (derived_n == 2)
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::rotated_180_degrees() const requires (derived_n == 2)
 {
-  return static_cast<derived_type>(raw_().rotate_180_degrees());
+  return static_cast<derived_type>(raw_().rotated_180_degrees());
 }
 
 template<typename DerivedTypes>
-typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::rotate_270_degrees() const requires (derived_n == 2)
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::rotated_270_degrees() const requires (derived_n == 2)
 {
-  return static_cast<derived_type>(raw_().rotate_270_degrees());
+  return static_cast<derived_type>(raw_().rotated_270_degrees());
 }
 
 template<typename DerivedTypes>
@@ -295,19 +295,19 @@ T DirectionOps<DirectionTypes<N, T>>::as_angle(int x, int y) const requires (N >
 }
 
 template<int N, typename T>
-Direction<N, T> DirectionOps<DirectionTypes<N, T>>::rotate_90_degrees() const requires (N == 2)
+Direction<N, T> DirectionOps<DirectionTypes<N, T>>::rotated_90_degrees() const requires (N == 2)
 {
   return { -y(), x() };
 }
 
 template<int N, typename T>
-Direction<N, T> DirectionOps<DirectionTypes<N, T>>::rotate_180_degrees() const requires (N == 2)
+Direction<N, T> DirectionOps<DirectionTypes<N, T>>::rotated_180_degrees() const requires (N == 2)
 {
   return { -x(), -y() };
 }
 
 template<int N, typename T>
-Direction<N, T> DirectionOps<DirectionTypes<N, T>>::rotate_270_degrees() const requires (N == 2)
+Direction<N, T> DirectionOps<DirectionTypes<N, T>>::rotated_270_degrees() const requires (N == 2)
 {
   return { y(), -x() };
 }
