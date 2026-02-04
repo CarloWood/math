@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TranslationVector.h"
+#include "Direction.h"
 #include <cmath>
 #include <concepts>
 #include <sstream>
@@ -41,7 +42,7 @@ concept AffineTransformConcept =
     { transform.m22() } -> std::same_as<double>;
     { transform.m32() } -> std::same_as<double>;
     { transform.translate(dx, dy) } -> std::same_as<AffineTransform&>;
-    { transform.scale(factor) } -> std::same_as<AffineTransform&>;
+    { transform.scale(factor, factor) } -> std::same_as<AffineTransform&>;
     { transform.rotate(radians) } -> std::same_as<AffineTransform&>;
     { const_transform.inverted() } -> std::same_as<AffineTransform>;
     { const_transform.map_point(x, y) } -> std::same_as<std::pair<double, double>>;
@@ -77,11 +78,11 @@ class AffineTransform2D
     return t;
   }
 
-  static AffineTransform2D scaling(double factor)
+  static AffineTransform2D scaling(double x_factor, double y_factor)
   {
     AffineTransform2D s;
-    s.m11_ = factor;
-    s.m22_ = factor;
+    s.m11_ = x_factor;
+    s.m22_ = y_factor;
     return s;
   }
 
@@ -128,13 +129,13 @@ class AffineTransform2D
   //
   //   returns
   //
-  //     ⎡ s  0  0 ⎤⎡ m₁₁ m₁₂ 0 ⎤   ⎡ s * m₁₁  s * m₁₂  0 ⎤
-  //     ⎢ 0  s  0 ⎥⎢ m₂₁ m₂₂ 0 ⎥ = ⎢ s * m₂₁  s * m₂₂  0 ⎥
-  //     ⎣ 0  0  1 ⎦⎣ m₃₁ m₃₂ 1 ⎦   ⎣     m₃₁      m₃₂  1 ⎦
+  //     ⎡ sx  0   0 ⎤⎡ m₁₁ m₁₂ 0 ⎤   ⎡ sx * m₁₁  sx * m₁₂  0 ⎤
+  //     ⎢ 0   sy  0 ⎥⎢ m₂₁ m₂₂ 0 ⎥ = ⎢ sy * m₂₁  sy * m₂₂  0 ⎥
+  //     ⎣ 0   0   1 ⎦⎣ m₃₁ m₃₂ 1 ⎦   ⎣      m₃₁       m₃₂  1 ⎦
   //
-  AffineTransform2D& scale(double factor)
+  AffineTransform2D& scale(double x_factor, double y_factor)
   {
-    *this = scaling(factor) * *this;
+    *this = scaling(x_factor, y_factor) * *this;
     return *this;
   }
 
@@ -239,13 +240,19 @@ class Transform
 
   // Prepend an affine transform to the current Transform.
   Transform& translate(TranslationVector<to_cs> const& tv);
-  Transform& scale(double factor);
+  Transform& scale(double x_factor, double y_factor);
+  Transform& scale(double factor) { return scale(factor, factor); }
   Transform& rotate(double radians);
 
   // Map point (x,y).
   std::pair<double, double> map_point(double x, double y) const
   {
     return m_.map_point(x, y);
+  }
+
+  std::pair<double, double> map_vector(double dx, double dy) const
+  {
+    return m_.map_vector(dx, dy);
   }
 
   Transform inverted() const
@@ -258,18 +265,41 @@ class Transform
     return {m_.m31(), m_.m32()};
   }
 
-  double scale() const
+  double x_scale() const
   {
-    double const factor = std::hypot(m_.m11(), m_.m12());
-    // We don't allow non-uniform scaling, so these should always be the same.
-    ASSERT(utils::almost_equal(std::hypot(m_.m21(), m_.m22()), factor, 10e-9));
-    return factor;
+    double const x_factor = std::hypot(m_.m11(), m_.m12());
+    return x_factor;
   }
 
-  double rotation() const
+  double y_scale() const
   {
-    return std::atan2(m_.m12(), m_.m11());
+    double const y_factor = std::hypot(m_.m21(), m_.m22());
+    return y_factor;
   }
+
+  std::pair<double, double> scale_factors() const
+  {
+    return {x_scale(), y_scale()};
+  };
+
+
+#if 0 // FIXME: Don't have cs-aware Direction in math yet.
+  // Return the direction of the mapped x-axis.
+  //
+  // This is the direction of the basis vector (1, 0) after applying the linear
+  // part of this transform; it is well-defined even when the transform contains
+  // non-uniform scaling and/or shear.
+  cs::Direction<to_cs> x_axis_direction() const
+  {
+    return cs::Direction<to_cs>(Point<2>(m_.m11(), m_.m12()));
+  }
+
+  // Return the direction of the mapped y-axis (basis vector (0, 1) mapped by the linear part).
+  cs::Direction<to_cs> y_axis_direction() const
+  {
+    return cs::Direction<to_cs>(Point<2>(m_.m21(), m_.m22()));
+  }
+#endif
 
   // The inverse converts from `to_cs` to `from_cs`!
   Transform<to_cs, from_cs, !inverted_, AffineTransformBackend> const& inverse() const
@@ -374,9 +404,9 @@ Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::translate(Translat
 
 template<CS from_cs, CS to_cs, bool inverted_, AffineTransformConcept AffineTransformBackend>
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>&
-Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::scale(double factor)
+Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::scale(double x_factor, double y_factor)
 {
-  m_.scale(factor);
+  m_.scale(x_factor, y_factor);
   return *this;
 }
 

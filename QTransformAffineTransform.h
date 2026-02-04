@@ -93,9 +93,9 @@ class QTransformAffineTransform
     return *this;
   }
 
-  QTransformAffineTransform& scale(double factor)
+  QTransformAffineTransform& scale(double x_factor, double y_factor)
   {
-    transform_.scale(static_cast<Scalar>(factor), static_cast<Scalar>(factor));
+    transform_.scale(static_cast<Scalar>(x_factor), static_cast<Scalar>(y_factor));
     return *this;
   }
 
@@ -103,7 +103,7 @@ class QTransformAffineTransform
   {
     static constexpr double pi = std::acos(-1.0);
     // QTransform takes degrees.
-    transform_.rotate(static_cast<Scalar>(radians * pi / 180.0));
+    transform_.rotate(static_cast<Scalar>(radians * 180.0 / pi));
     return *this;
   }
 
