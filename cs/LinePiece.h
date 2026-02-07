@@ -3,7 +3,7 @@
 #include "Direction.h"
 #include "math/LinePiece.h"
 
-namespace cairowindow::cs {
+namespace math::cs {
 
 template<CS cs>
 class LinePiece;
@@ -45,4 +45,4 @@ class LinePiece : public math::LinePieceOps<LinePieceTypes<cs>>
 #endif
 };
 
-} // namespace cairowindow::cs
+} // namespace math::cs

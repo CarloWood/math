@@ -7,12 +7,12 @@
 #include "utils/to_string.h"
 #endif
 
-namespace cairowindow::cs {
+namespace math::cs {
 #ifdef CWDEBUG
 using utils::has_print_on::operator<<;
 #endif
 
-template<math::CS cs> //FIXME: remove 'math::' once this becomes namespace math::cs
+template<CS cs>
 class Size
 {
  private:
@@ -45,4 +45,4 @@ class Size
 #endif
 };
 
-} // namespace cairowindow::cs
+} // namespace math::cs

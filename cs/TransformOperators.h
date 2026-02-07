@@ -4,7 +4,7 @@
 #include "Size.h"
 #include "math/Transform.h"
 
-namespace cairowindow::cs {
+namespace math::cs {
 
 template<CS from_cs, CS to_cs, bool inverted, math::AffineTransformConcept AffineTransformBackend>
 Point<to_cs> operator*(Point<from_cs> const& point, math::Transform<from_cs, to_cs, inverted, AffineTransformBackend> const& transform)
@@ -53,4 +53,4 @@ Rectangle<to_cs> operator*(Rectangle<from_cs> const& rectangle, math::Transform<
 }
 #endif
 
-} // namespace cairowindow::cs
+} // namespace math::cs

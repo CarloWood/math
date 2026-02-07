@@ -1,10 +1,9 @@
 #pragma once
 
 #include "LinePiece.h"
-#include "cairowindow/Pixel.h"
 #include "math/Vector.h"
 
-namespace cairowindow::cs {
+namespace math::cs {
 
 template<CS cs>
 class Vector;
@@ -50,7 +49,7 @@ class Vector : public math::VectorOps<VectorTypes<cs>>
   // Explicit conversion from math::Vector.
   explicit Vector(math::Vector<2> const& raw) : raw_(raw) { }
 
-  // Convert the vector to a Pixel.
+  // Convert the vector to a pixel.
   Point<csid::pixels> as_pixel() const { return {this->x(), this->y()}; }
 
   math::Vector<2>& raw() { return raw_; }
@@ -64,4 +63,4 @@ class Vector : public math::VectorOps<VectorTypes<cs>>
 #endif
 };
 
-} // namespace cairowindow::cs
+} // namespace math::cs

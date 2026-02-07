@@ -3,7 +3,7 @@
 #include "Point.h"
 #include "math/Direction.h"
 
-namespace cairowindow::cs {
+namespace math::cs {
 
 template<CS cs>
 class Direction;
@@ -53,4 +53,4 @@ class Direction : public math::DirectionOps<DirectionTypes<cs>>
 #endif
 };
 
-} // namespace cairowindow::cs
+} // namespace math::cs

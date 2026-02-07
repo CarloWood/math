@@ -4,8 +4,7 @@
 #include "math/TranslationVector.h"
 #include "math/Point.h"
 
-namespace cairowindow::cs {
-using CS = math::CS; //FIXME: remove once this namespace becomes math::cs
+namespace math::cs {
 
 template<CS cs>
 class Point;
@@ -71,4 +70,4 @@ class Point : public math::PointOps<PointTypes<cs>>
 #endif
 };
 
-} // namespace cairowindow::cs
+} // namespace math::cs

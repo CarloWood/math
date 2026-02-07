@@ -7,7 +7,7 @@
 #include "utils/to_string.h"
 #endif
 
-namespace cairowindow::cs {
+namespace math::cs {
 #ifdef CWDEBUG
 using utils::has_print_on::operator<<;
 #endif
@@ -52,4 +52,4 @@ class Line : public math::LineOps<LineTypes<cs>>
 #endif
 };
 
-} // namespace cairowindow::cs
+} // namespace math::cs

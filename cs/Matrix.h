@@ -3,7 +3,7 @@
 #include "LinePiece.h"
 #include "math/Matrix.h"
 
-namespace cairowindow::cs {
+namespace math::cs {
 
 template<CS cs>
 class Matrix;
@@ -49,4 +49,4 @@ class Matrix : public math::MatrixOps<MatrixTypes<cs>>
 #endif
 };
 
-} // namespace cairowindow::cs
+} // namespace math::cs
