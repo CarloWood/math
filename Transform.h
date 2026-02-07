@@ -283,7 +283,6 @@ class Transform
   };
 
 
-#if 0 // FIXME: Don't have cs-aware Direction in math yet.
   // Return the direction of the mapped x-axis.
   //
   // This is the direction of the basis vector (1, 0) after applying the linear
@@ -299,7 +298,6 @@ class Transform
   {
     return cs::Direction<to_cs>(Point<2>(m_.m21(), m_.m22()));
   }
-#endif
 
   // The inverse converts from `to_cs` to `from_cs`!
   Transform<to_cs, from_cs, !inverted_, AffineTransformBackend> const& inverse() const
