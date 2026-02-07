@@ -34,8 +34,8 @@ target_sources(math_ObjLib
   PRIVATE
     "AnalyzedCubic.cxx"
     "bracket_zero.cxx"
-    "CS.cxx"
     "subsuper_string.cxx"
+    "cs/CS.cxx"
 
     ${HEADER_FILES}
 )

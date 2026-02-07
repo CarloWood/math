@@ -1,7 +1,7 @@
 #pragma once
 
-#include "CS.h"
 #include "Vector.h"
+#include "cs/CS.h"
 
 namespace math {
 
