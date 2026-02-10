@@ -30,7 +30,7 @@ struct kFaceData;
 //      ^^^  ^^^^^^^
 //
 // The fixed bits (<fffffff>) are those bits from the coordinate mask of each
-// corner of the k-face that do not change: the bits that belong the one of the
+// corner of the k-face that do not change: the bits that belong to one of the
 // k axis (that are thus not fixed) are removed.
 //
 // The rank bits (<rrr>) encode the lexiographic rank of the k axes that the k-face
