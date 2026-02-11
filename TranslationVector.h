@@ -1,9 +1,17 @@
 #pragma once
 
-#include "Vector.h"
-#include "cs/CS.h"
+#include "cs/Vector.h"
 
 namespace math {
+namespace cs {
+
+template<CS cs>
+class Size;
+
+template<CS cs>
+class Point;
+
+} // namespace cs
 
 // TranslationVector
 //
@@ -28,13 +36,17 @@ template<CS cs>
 class TranslationVector
 {
  private:
-  math::Vector<2> translation_;
+  cs::Vector<cs> translation_;
 
  private:
   TranslationVector(Vector<2> const& translation) : translation_(translation) { }
   TranslationVector(double dx, double dy) : translation_(dx, dy) { }
 
  public:
+  TranslationVector(cs::Size<cs> const& translation) : translation_(translation.width(), translation.height()) { }
+  TranslationVector(cs::Point<cs> const& translation) : translation_(translation) { }
+  TranslationVector(cs::Vector<cs> const& translation) : translation_(translation) { }
+
   double dx() const { return translation_.x(); }
   double dy() const { return translation_.y(); }
 

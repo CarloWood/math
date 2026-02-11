@@ -1,12 +1,15 @@
 #pragma once
 
-#include "LinePiece.h"
+#include "math/cs/Point.h"
 #include "math/Vector.h"
 
 namespace math::cs {
 
 template<CS cs>
 class Vector;
+
+template<CS cs>
+class LinePiece;
 
 template<CS cs>
 struct VectorTypes

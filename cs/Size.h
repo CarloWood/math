@@ -25,13 +25,6 @@ class Size
   double width() const { return width_; }
   double height() const { return height_; }
 
-  // Implicit converstion to math::TranslationVector<cs>, so we can pass a Size<cs> to math::Transform<>::translate.
-  operator math::TranslationVector<cs>() const
-  {
-    // This is OK because width_ and height are in the cs coordinate system.
-    return math::TranslationVector<cs>::create_from_cs_values(width_, height_);
-  }
-
   friend Size operator*(double scale, Size const& size)
   {
     return {scale * size.width(), scale * size.height()};

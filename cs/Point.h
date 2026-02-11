@@ -1,10 +1,18 @@
 #pragma once
 
-#include "Size.h"
-#include "math/TranslationVector.h"
 #include "math/Point.h"
+#ifdef CWDEBUG
+#include "utils/to_string.h"
+#endif
 
-namespace math::cs {
+namespace math {
+template<CS cs>
+class TranslationVector;
+
+namespace cs {
+
+template<CS cs>
+class Size;
 
 template<CS cs>
 class Point;
@@ -56,12 +64,6 @@ class Point : public math::PointOps<PointTypes<cs>>
   math::Point<2>& raw() { return raw_; }
   math::Point<2> const& raw() const { return raw_; }
 
-  // Implicit converstion to math::TranslationVector<cs>, so we can pass a Point<cs> to math::Transform<>::translate.
-  operator math::TranslationVector<cs>() const
-  {
-    return math::TranslationVector<cs>::create_from_cs_values(raw_);
-  }
-
 #ifdef CWDEBUG
   void print_on(std::ostream& os) const
   {
@@ -70,4 +72,5 @@ class Point : public math::PointOps<PointTypes<cs>>
 #endif
 };
 
-} // namespace math::cs
+} // namespace cs
+} // namespace math
