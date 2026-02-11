@@ -143,6 +143,8 @@ struct VectorOps
   derived_type rotated_90_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotated_90_degrees()); }
   derived_type rotated_180_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotated_180_degrees()); }
   derived_type rotated_270_degrees() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().rotated_270_degrees()); }
+  derived_type reflected_across_x_axis() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().reflected_across_x_axis()); }
+  derived_type reflected_across_y_axis() const requires (derived_n == 2) { return static_cast<derived_type>(raw_().reflected_across_y_axis()); }
 
   derived_type& operator+=(derived_type const& v2) { raw_().operator+=(v2.raw()); return static_cast<derived_type&>(*this); }
   derived_type& operator-=(derived_type const& v2) { raw_().operator-=(v2.raw()); return static_cast<derived_type&>(*this); }
@@ -247,6 +249,12 @@ struct VectorOps<VectorTypes<N, T>>
 
   // Return the vector rotated 270 degrees.
   Vector<N, T> rotated_270_degrees() const requires (N == 2) { return { y(), -x() }; }
+
+  // Reflect the vector across the x-axis.
+  Vector<N, T> reflected_across_x_axis() const requires (N == 2) { return { x(), -y() }; }
+
+  // Reflect the vector across the y-axis.
+  Vector<N, T> reflected_across_y_axis() const requires (N == 2) { return { -x(), y() }; }
 
   // Add another vector.
   Vector<N, T>& operator+=(Vector<N, T> const& v2)

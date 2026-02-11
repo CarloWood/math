@@ -109,6 +109,8 @@ struct DirectionOps
   inline derived_type rotated_90_degrees() const requires (derived_n == 2);
   inline derived_type rotated_180_degrees() const requires (derived_n == 2);
   inline derived_type rotated_270_degrees() const requires (derived_n == 2);
+  inline derived_type reflected_across_x_axis() const requires (derived_n == 2);
+  inline derived_type reflected_across_y_axis() const requires (derived_n == 2);
 
   inline void negate();
 
@@ -179,6 +181,12 @@ struct DirectionOps<DirectionTypes<N, T>>
 
   // Return the direction rotated 270 degrees.
   inline Direction<N, T> rotated_270_degrees() const requires (N == 2);
+
+  // Return the direction reflected accross the x-axis.
+  inline Direction<N, T> reflected_across_x_axis() const requires (N == 2);
+
+  // Return the direction reflected accross the y-axis.
+  inline Direction<N, T> reflected_across_y_axis() const requires (N == 2);
 
   // Negate this Direction (aka rotate 180 degrees, if N=2).
   inline void negate();
@@ -264,6 +272,18 @@ typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::rotated_270_degr
 }
 
 template<typename DerivedTypes>
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::reflected_across_x_axis() const requires (derived_n == 2)
+{
+  return static_cast<derived_type>(raw_().reflected_across_x_axis());
+}
+
+template<typename DerivedTypes>
+typename DerivedTypes::derived_type DirectionOps<DerivedTypes>::reflected_across_y_axis() const requires (derived_n == 2)
+{
+  return static_cast<derived_type>(raw_().reflected_across_y_axis());
+}
+
+template<typename DerivedTypes>
 void DirectionOps<DerivedTypes>::negate()
 {
   raw_().negate();
@@ -310,6 +330,18 @@ template<int N, typename T>
 Direction<N, T> DirectionOps<DirectionTypes<N, T>>::rotated_270_degrees() const requires (N == 2)
 {
   return { y(), -x() };
+}
+
+template<int N, typename T>
+Direction<N, T> DirectionOps<DirectionTypes<N, T>>::reflected_across_x_axis() const requires (N == 2)
+{
+  return { x(), -y() };
+}
+
+template<int N, typename T>
+Direction<N, T> DirectionOps<DirectionTypes<N, T>>::reflected_across_y_axis() const requires (N == 2)
+{
+  return { -x(), y() };
 }
 
 template<int N, typename T>
