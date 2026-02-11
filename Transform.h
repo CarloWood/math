@@ -255,7 +255,7 @@ class Transform
     return m_.map_vector(dx, dy);
   }
 
-  Transform inverted() const
+  Transform<to_cs, from_cs, inverted_, AffineTransformBackend> inverted() const
   {
     return {m_.inverted()};
   }
