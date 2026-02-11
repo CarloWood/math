@@ -396,7 +396,7 @@ template<CS from_cs, CS to_cs, bool inverted_, AffineTransformConcept AffineTran
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>&
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::translate(TranslationVector<to_cs> const& tv)
 {
-  m_.translate(tv.dx(), tv.dy());
+  m_.translate(tv.as_vector().x(), tv.as_vector().y());
   return *this;
 }
 

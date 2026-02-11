@@ -5,11 +5,7 @@
 #include "utils/to_string.h"
 #endif
 
-namespace math {
-template<CS cs>
-class TranslationVector;
-
-namespace cs {
+namespace math::cs {
 
 template<CS cs>
 class Size;
@@ -72,5 +68,4 @@ class Point : public math::PointOps<PointTypes<cs>>
 #endif
 };
 
-} // namespace cs
-} // namespace math
+} // namespace math::cs

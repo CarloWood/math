@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CS.h"
-#include "math/TranslationVector.h"
 #ifdef CWDEBUG
 #include "utils/has_print_on.h"
 #include "utils/to_string.h"

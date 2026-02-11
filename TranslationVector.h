@@ -47,8 +47,7 @@ class TranslationVector
   TranslationVector(cs::Point<cs> const& translation) : translation_(translation) { }
   TranslationVector(cs::Vector<cs> const& translation) : translation_(translation) { }
 
-  double dx() const { return translation_.x(); }
-  double dy() const { return translation_.y(); }
+  cs::Vector<cs> const& as_vector() const { return translation_; }
 
   // Allow explicit conversion of non-coordinate-system values to be used to construct a TranslationVector.
   // This should really only be used in the implicit conversion operator of a templated type<cs>.

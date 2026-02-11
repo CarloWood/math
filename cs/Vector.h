@@ -6,6 +6,9 @@
 namespace math::cs {
 
 template<CS cs>
+class Size;
+
+template<CS cs>
 class Vector;
 
 template<CS cs>
@@ -48,6 +51,9 @@ class Vector : public math::VectorOps<VectorTypes<cs>>
 
   // Construct a Vector from a Line, pointing from the first point to the second point.
   explicit Vector(LinePiece<cs> const& line_piece) : raw_(line_piece.raw()) { }
+
+  // Construct a Vector from a Size, using the width as x coordinate and the height as y coordinate.
+  explicit Vector(Size<cs> const& size) : raw_(size.width(), size.height()) { }
 
   // Explicit conversion from math::Vector.
   explicit Vector(math::Vector<2> const& raw) : raw_(raw) { }
