@@ -41,8 +41,8 @@ class DirectionData
   // Construct a Direction that points in the direction theta (in radians): the counter-clockwise angle with the positive x-axis.
   DirectionData(T theta) requires (N == 2) : d_(std::cos(theta), std::sin(theta)) { }
 
-  // Construct a Direction from two points.
-  explicit DirectionData(Point<N, T> const& from, Point<N, T> const& to) : d_(to.eigen() - from.eigen())
+  // Native constructor - do not use this if you can avoid it; it is mostly for internal use.
+  explicit DirectionData(eigen_type d) : d_(d)
   {
     // Normalize the unit vector.
     d_.normalize();
@@ -54,8 +54,17 @@ class DirectionData
 #endif
   }
 
+  // Construct a Direction from two points.
+  explicit DirectionData(Point<N, T> const& from, Point<N, T> const& to) :
+    DirectionData(to.eigen() - from.eigen()) { }
+
   // If only one point is give, the direction is from the origin to that point.
-  explicit DirectionData(Point<N, T> const& to) : DirectionData(Point<N, T>(Point<N, T>::eigen_type::Zero()), to) { }
+  explicit DirectionData(Point<N, T> const& to) :
+    DirectionData(to.eigen()) { }
+
+  // Construct a Direction from a Vector.
+  explicit DirectionData(Vector<N, T> const& to) :
+    DirectionData(to.eigen()) { }
 
   // Construct a Direction from a LinePiece.
   DirectionData(LinePiece<N, T> const& line_piece);
@@ -77,8 +86,6 @@ class DirectionData
       !(N == 1 && ((std::same_as<std::remove_cvref_t<U>, DirectionData> || ...))))      // Do not replace copy/move constructor.
   constexpr DirectionData(U&&... xs) : d_(static_cast<T>(std::forward<U>(xs))...) { }
 
-  DirectionData(eigen_type d) : d_(d) { }
-
 #ifdef CWDEBUG
  public:
   void print_on(std::ostream& os) const;
@@ -99,9 +106,9 @@ struct DirectionOps
 
  public:
   derived_scalar_type const& operator[](int i) const { return raw_().operator[](i); }
-  derived_scalar_type x() const { return raw_().x(); }
-  derived_scalar_type y() const { return raw_().y(); }
-  derived_scalar_type z() const { return raw_().z(); }
+  derived_scalar_type x() const requires (derived_n >= 1) { return raw_().x(); }
+  derived_scalar_type y() const requires (derived_n >= 2) { return raw_().y(); }
+  derived_scalar_type z() const requires (derived_n >= 3) { return raw_().z(); }
 
   inline derived_scalar_type dot(derived_type const& d2) const;
   inline derived_scalar_type as_angle(int x = 0, int y = 1) const;
