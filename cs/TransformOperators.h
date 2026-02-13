@@ -7,36 +7,31 @@
 namespace math::cs {
 
 template<CS from_cs, CS to_cs, bool inverted, math::AffineTransformConcept AffineTransformBackend>
-Point<to_cs> operator*(Point<from_cs> const& point, math::Transform<from_cs, to_cs, inverted, AffineTransformBackend> const& transform)
+Point<to_cs> operator*(Point<from_cs> const& from, math::Transform<from_cs, to_cs, inverted, AffineTransformBackend> const& transform)
 {
-  if constexpr (!inverted)
-  {
-    auto const [x, y] = transform.map_point(point.x(), point.y());
-    return {x, y};
-  }
-  else
-  {
-    auto const inv = transform.inverted();
-    auto const [x, y] = inv.map_point(point.x(), point.y());
-    return {x, y};
-  }
+  static_assert(!inverted, "Do not multiply with a Transform<..., inverted = true, ...> type. Pre-calculate the inverse first by calling Transform::inverted().");
+  return transform.map_point(from);
 }
 
 template<CS from_cs, CS to_cs, bool inverted, math::AffineTransformConcept AffineTransformBackend>
-Size<to_cs> operator*(Size<from_cs> const& size, math::Transform<from_cs, to_cs, inverted, AffineTransformBackend> const& transform)
+Vector<to_cs> operator*(Vector<from_cs> const& from, math::Transform<from_cs, to_cs, inverted, AffineTransformBackend> const& transform)
 {
-  // Just scale; scale the X and Y axis vectors by the full linear part.
-  if constexpr (!inverted)
-  {
-    auto const [sx, sy] = transform.scale_factors();
-    return {size.width() * sx, size.height() * sy};
-  }
-  else
-  {
-    auto const inv = transform.inverted();
-    auto const [sx, sy] = inv.scale_factors();
-    return {size.width() * sx, size.height() * sy};
-  }
+  static_assert(!inverted, "Do not multiply with a Transform<..., inverted = true, ...> type. Pre-calculate the inverse first by calling Transform::inverted().");
+  return transform.map_vector(from);
+}
+
+template<CS from_cs, CS to_cs, bool inverted, math::AffineTransformConcept AffineTransformBackend>
+Direction<to_cs> operator*(Direction<from_cs> const& from, math::Transform<from_cs, to_cs, inverted, AffineTransformBackend> const& transform)
+{
+  static_assert(!inverted, "Do not multiply with a Transform<..., inverted = true, ...> type. Pre-calculate the inverse first by calling Transform::inverted().");
+  return transform.map_direction(from);
+}
+
+template<CS from_cs, CS to_cs, bool inverted, math::AffineTransformConcept AffineTransformBackend>
+Size<to_cs> operator*(Size<from_cs> const& from, math::Transform<from_cs, to_cs, inverted, AffineTransformBackend> const& transform)
+{
+  static_assert(!inverted, "Do not multiply with a Transform<..., inverted = true, ...> type. Pre-calculate the inverse first by calling Transform::inverted().");
+  return transform.map_size(from);
 }
 
 } // namespace math::cs
