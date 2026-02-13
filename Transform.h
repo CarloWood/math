@@ -1,3 +1,4 @@
+//NOT RECOVERED:
 #pragma once
 
 #include "TranslationVector.h"
@@ -215,6 +216,7 @@ class AffineTransform2D
     result.m22_ = lhs.m21_ * rhs.m12_ + lhs.m22_ * rhs.m22_;
     result.m31_ = lhs.m31_ * rhs.m11_ + lhs.m32_ * rhs.m21_ + rhs.m31_;
     result.m32_ = lhs.m31_ * rhs.m12_ + lhs.m32_ * rhs.m22_ + rhs.m32_;
+// RECOVERED:
     return result;
   }
 };
@@ -239,38 +241,75 @@ class Transform
   Transform() = default;
 
   // Prepend an affine transform to the current Transform.
-  Transform& translate(TranslationVector<to_cs> const& tv);
-  Transform& scale(double x_factor, double y_factor);
+  Transform& translate(TranslationVector<to_cs> const& tv) requires (inverted_ == false);
+  Transform& scale(double x_factor, double y_factor) requires (inverted_ == false);
   Transform& scale(double factor) { return scale(factor, factor); }
-  Transform& rotate(double radians);
+  Transform& rotate(double radians) requires (inverted_ == false);
 
   // Map point (x,y).
-  std::pair<double, double> map_point(double x, double y) const
+  [[nodiscard]] std::pair<double, double> map_point(double x, double y) const
+  requires (inverted_ == false)
   {
     return m_.map_point(x, y);
   }
 
-  std::pair<double, double> map_vector(double dx, double dy) const
+  [[nodiscard]] cs::Point<to_cs> map_point(cs::Point<from_cs> const& p) const
+  requires (inverted_ == false)
+  {
+    return cs::Point<to_cs>{m_.map_point(p.raw())};
+  }
+
+  [[nodiscard]] std::pair<double, double> map_vector(double dx, double dy) const
+  requires (inverted_ == false)
   {
     return m_.map_vector(dx, dy);
   }
 
-  Transform<to_cs, from_cs, inverted_, AffineTransformBackend> inverted() const
+  [[nodiscard]] cs::Vector<to_cs> map_vector(cs::Vector<from_cs> const& v) const
+  requires (inverted_ == false)
   {
-    return {m_.inverted()};
+    return cs::Vector<to_cs>{m_.map_vector(v.raw())};
+  }
+
+  [[nodiscard]] cs::Direction<to_cs> map_direction(cs::Direction<from_cs> const& d) const
+  {
+    return cs::Direction<to_cs>{m_.map_direction(d.raw())};
+  }
+
+  // Just scale.
+  //
+  [[nodiscard]] cs::Size<to_cs> map_size(cs::Size<from_cs> const& s) const
+  {
+    double const x_factor = std::hypot(m_.m11(), m_.m12());
+    double const y_factor = std::hypot(m_.m21(), m_.m22());
+
+    // Just scale; scale the X and Y axis vectors by the full linear part.
+    if constexpr (!inverted_)
+      return {s.width() * x_factor, s.height() * y_factor};
+    else
+      return {s.width() / x_factor, s.height() / y_factor};
+  }
+
+  // The inverted Transfrom converts from `to_cs` to `from_cs`.
+  Transform<to_cs, from_cs, false, AffineTransformBackend> inverted() const
+  {
+    return {inverted_ ? m_ : m_.inverted()};
   }
 
   TranslationVector<to_cs> translation() const
+  requires (inverted_ == false)
   {
     return {m_.m31(), m_.m32()};
   }
 
   double x_scale() const
+  requires (inverted_ == false)
   {
     double const x_factor = std::hypot(m_.m11(), m_.m12());
     return x_factor;
   }
 
+// NOT RECOVERED:
   double y_scale() const
   {
     double const y_factor = std::hypot(m_.m21(), m_.m22());
