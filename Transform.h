@@ -3,6 +3,7 @@
 
 #include "TranslationVector.h"
 #include "Direction.h"
+#include "Vector.h"
 #include <cmath>
 #include <concepts>
 #include <sstream>
@@ -169,10 +170,25 @@ class AffineTransform2D
     return {x * m11_ + y * m21_ + m31_, x * m12_ + y * m22_ + m32_};
   }
 
+  [[nodiscard]] Point<2> map_point(Point<2> const& p) const
+  {
+    return {p.x() * m11_ + p.y() * m21_ + m31_, p.x() * m12_ + p.y() * m22_ + m32_};
+  }
+
   // Same, without translation (assume m₃₁ = m₃₂ = 0).
   [[nodiscard]] std::pair<double, double> map_vector(double dx, double dy) const
   {
     return {dx * m11_ + dy * m21_, dx * m12_ + dy * m22_};
+  }
+
+  [[nodiscard]] Vector<2> map_vector(Vector<2> const& v) const
+  {
+    return {v.x() * m11_ + v.y() * m21_, v.x() * m12_ + v.y() * m22_};
+  }
+
+  [[nodiscard]] Direction<2> map_direction(Direction<2> const& v) const
+  {
+    return Direction<2>{Direction<2>::eigen_type{v.x() * m11_ + v.y() * m21_, v.x() * m12_ + v.y() * m22_}};
   }
 
   // - inverted()
@@ -434,6 +450,7 @@ class Transform
 template<CS from_cs, CS to_cs, bool inverted_, AffineTransformConcept AffineTransformBackend>
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>&
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::translate(TranslationVector<to_cs> const& tv)
+requires (inverted_ == false)
 {
   m_.translate(tv.as_vector().x(), tv.as_vector().y());
   return *this;
@@ -442,6 +459,7 @@ Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::translate(Translat
 template<CS from_cs, CS to_cs, bool inverted_, AffineTransformConcept AffineTransformBackend>
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>&
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::scale(double x_factor, double y_factor)
+requires (inverted_ == false)
 {
   m_.scale(x_factor, y_factor);
   return *this;
@@ -450,6 +468,7 @@ Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::scale(double x_fac
 template<CS from_cs, CS to_cs, bool inverted_, AffineTransformConcept AffineTransformBackend>
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>&
 Transform<from_cs, to_cs, inverted_, AffineTransformBackend>::rotate(double radians)
+requires (inverted_ == false)
 {
   m_.rotate(radians);
   return *this;
