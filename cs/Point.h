@@ -1,5 +1,6 @@
 #pragma once
 
+#include "math/cs/CS.h"
 #include "math/Point.h"
 #ifdef CWDEBUG
 #include "utils/to_string.h"

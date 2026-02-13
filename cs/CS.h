@@ -23,7 +23,7 @@ struct CS
 
 #define DECLARE_CSID(x) \
   inline constexpr char x##_name[] = "csid::" #x; \
-  inline constexpr CS x{x##_name};
+  inline constexpr math::CS x{x##_name};
 
 namespace csid {
   DECLARE_CSID(painter);        // The space defined by the painter’s Current Transformation Matrix (CTM) at the instant you issue a painter->draw*() call.
