@@ -35,7 +35,9 @@ concept AffineTransformConcept =
   std::default_initializable<AffineTransform> &&
   std::copy_constructible<AffineTransform> &&
   requires(AffineTransform transform, AffineTransform const const_transform,
-           double x, double y, double dx, double dy, double factor, double radians)
+           Point<2> const& p, double x, double y,
+           Vector<2> const& v, double dx, double dy,
+           Direction<2> const& d, double factor, double radians)
   {
     { transform.m11() } -> std::same_as<double>;
     { transform.m21() } -> std::same_as<double>;
@@ -48,7 +50,10 @@ concept AffineTransformConcept =
     { transform.rotate(radians) } -> std::same_as<AffineTransform&>;
     { const_transform.inverted() } -> std::same_as<AffineTransform>;
     { const_transform.map_point(x, y) } -> std::same_as<std::pair<double, double>>;
+    { const_transform.map_point(p) } -> std::same_as<Point<2>>;
     { const_transform.map_vector(dx, dy) } -> std::same_as<std::pair<double, double>>;
+    { const_transform.map_vector(v) } -> std::same_as<Vector<2>>;
+    { const_transform.map_direction(d) } -> std::same_as<Direction<2>>;
     { const_transform * const_transform } -> std::same_as<AffineTransform>;
   };
 
@@ -315,7 +320,8 @@ class Transform
   TranslationVector<to_cs> translation() const
   requires (inverted_ == false)
   {
-    return {m_.m31(), m_.m32()};
+    cs::Vector<to_cs> const translation_vector{m_.m31(), m_.m32()};
+    return {translation_vector};
   }
 
   double x_scale() const
@@ -345,13 +351,13 @@ class Transform
   // non-uniform scaling and/or shear.
   cs::Direction<to_cs> x_axis_direction() const
   {
-    return cs::Direction<to_cs>(Point<2>(m_.m11(), m_.m12()));
+    return cs::Direction<to_cs>{Direction<2>::eigen_type{m_.m11(), m_.m12()}};
   }
 
   // Return the direction of the mapped y-axis (basis vector (0, 1) mapped by the linear part).
   cs::Direction<to_cs> y_axis_direction() const
   {
-    return cs::Direction<to_cs>(Point<2>(m_.m21(), m_.m22()));
+    return cs::Direction<to_cs>{Direction<2>::eigen_type{m_.m21(), m_.m22()}};
   }
 
   // The inverse converts from `to_cs` to `from_cs`!

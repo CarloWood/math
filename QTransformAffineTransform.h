@@ -1,5 +1,8 @@
 #pragma once
 
+#include "math/Point.h"
+#include "math/Vector.h"
+#include "math/Direction.h"
 #include <type_traits>
 #include <utility>
 #include "debug.h"
@@ -122,10 +125,27 @@ class QTransformAffineTransform
     return {xr, yr};
   }
 
+  [[nodiscard]] Point<2> map_point(Point<2> const& p) const
+  {
+    Scalar xr, yr;
+    transform_.map(static_cast<Scalar>(p.x()), static_cast<Scalar>(p.y()), &xr, &yr);
+    return {xr, yr};
+  }
+
   [[nodiscard]] std::pair<double, double> map_vector(double dx, double dy) const
   {
     // Affine vector mapping: translation cancels out.
     return {dx * transform_.m11() + dy * transform_.m21(), dx * transform_.m12() + dy * transform_.m22()};
+  }
+
+  [[nodiscard]] Vector<2> map_vector(Vector<2> const& v) const
+  {
+    return {v.x() * transform_.m11() + v.y() * transform_.m21(), v.x() * transform_.m12() + v.y() * transform_.m22()};
+  }
+
+  [[nodiscard]] Direction<2> map_direction(Direction<2> const& d) const
+  {
+    return Direction<2>{Direction<2>::eigen_type{d.x() * transform_.m11() + d.y() * transform_.m21(), d.x() * transform_.m12() + d.y() * transform_.m22()}};
   }
 
   friend QTransformAffineTransform operator*(QTransformAffineTransform const& lhs, QTransformAffineTransform const& rhs)
